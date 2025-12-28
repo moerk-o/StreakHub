@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import date
 from typing import Any
 
 from homeassistant.components.sensor import (
     SensorEntity,
+    SensorEntityDescription,
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
@@ -27,7 +30,85 @@ from .const import (
     UNIT_DAYS,
 )
 from .coordinator import StreakHubCoordinator
-from .logic import calculate_rank, calculate_streak, calculate_top_3
+from .logic import Top3Entry, calculate_rank, calculate_streak, calculate_top_3
+
+
+@dataclass(frozen=True, kw_only=True)
+class StreakHubSensorEntityDescription(SensorEntityDescription):
+    """Describes a StreakHub sensor entity."""
+
+    value_fn: Callable[[StreakHubCoordinator, date], Any]
+    extra_state_attributes_fn: Callable[[StreakHubCoordinator, date], dict[str, Any]] | None = None
+    icon_fn: Callable[[StreakHubCoordinator, date], str] | None = None
+
+
+def _get_streak_start(coordinator: StreakHubCoordinator) -> date:
+    """Get streak start date from coordinator."""
+    return date.fromisoformat(coordinator.data["streak_start"])
+
+
+def _get_streak_value(coordinator: StreakHubCoordinator, today: date) -> int:
+    """Calculate current streak value."""
+    streak_start = _get_streak_start(coordinator)
+    return calculate_streak(streak_start, today)
+
+
+def _get_streak_attributes(coordinator: StreakHubCoordinator, today: date) -> dict[str, Any]:
+    """Get streak sensor attributes."""
+    return {
+        "streak_start": coordinator.data["streak_start"],
+    }
+
+
+def _get_top_3(coordinator: StreakHubCoordinator, today: date) -> list[Top3Entry]:
+    """Calculate top 3 streaks."""
+    streak_start = _get_streak_start(coordinator)
+    history = coordinator.data["history"]
+    return calculate_top_3(streak_start, history, today)
+
+
+def _get_rank_value(coordinator: StreakHubCoordinator, today: date) -> int:
+    """Calculate rank of current streak."""
+    top_3 = _get_top_3(coordinator, today)
+    return calculate_rank(top_3)
+
+
+def _get_rank_attributes(coordinator: StreakHubCoordinator, today: date) -> dict[str, Any]:
+    """Get rank sensor attributes."""
+    return {
+        "top_3": _get_top_3(coordinator, today),
+    }
+
+
+def _get_rank_icon(coordinator: StreakHubCoordinator, today: date) -> str:
+    """Get rank sensor icon based on current rank."""
+    rank = _get_rank_value(coordinator, today)
+    if rank == 1:
+        return ICON_TROPHY
+    elif rank in (2, 3):
+        return ICON_MEDAL
+    return ICON_TROPHY_OUTLINE
+
+
+SENSOR_DESCRIPTIONS: tuple[StreakHubSensorEntityDescription, ...] = (
+    StreakHubSensorEntityDescription(
+        key=ENTITY_STREAK,
+        translation_key=ENTITY_STREAK,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UNIT_DAYS,
+        icon=ICON_STREAK,
+        value_fn=_get_streak_value,
+        extra_state_attributes_fn=_get_streak_attributes,
+    ),
+    StreakHubSensorEntityDescription(
+        key=ENTITY_RANK,
+        translation_key=ENTITY_RANK,
+        state_class=None,
+        value_fn=_get_rank_value,
+        extra_state_attributes_fn=_get_rank_attributes,
+        icon_fn=_get_rank_icon,
+    ),
+)
 
 
 async def async_setup_entry(
@@ -45,40 +126,36 @@ async def async_setup_entry(
     coordinator: StreakHubCoordinator = hass.data[DOMAIN][entry.entry_id]
 
     async_add_entities(
-        [
-            StreakSensor(coordinator, entry),
-            RankSensor(coordinator, entry),
-        ]
+        StreakHubSensor(coordinator, description, entry)
+        for description in SENSOR_DESCRIPTIONS
     )
 
 
-class StreakHubBaseSensor(CoordinatorEntity[StreakHubCoordinator], SensorEntity):
-    """Base class for StreakHub sensors."""
+class StreakHubSensor(CoordinatorEntity[StreakHubCoordinator], SensorEntity):
+    """Representation of a StreakHub sensor."""
 
+    entity_description: StreakHubSensorEntityDescription
     _attr_has_entity_name = True
 
     def __init__(
         self,
         coordinator: StreakHubCoordinator,
+        description: StreakHubSensorEntityDescription,
         entry: ConfigEntry,
-        entity_key: str,
     ) -> None:
         """Initialize the sensor.
 
         Args:
             coordinator: The data coordinator.
+            description: Entity description for this sensor.
             entry: Config entry.
-            entity_key: Key for this entity type (streak, rank).
         """
         super().__init__(coordinator)
+        self.entity_description = description
         self._entry = entry
-        self._entity_key = entity_key
 
-        # Unique ID based on entry ID and entity type
-        self._attr_unique_id = f"{entry.entry_id}_{entity_key}"
-
-        # Translation key for entity name
-        self._attr_translation_key = entity_key
+        # Unique ID based on entry ID and sensor key
+        self._attr_unique_id = f"{entry.entry_id}_{description.key}"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -91,127 +168,30 @@ class StreakHubBaseSensor(CoordinatorEntity[StreakHubCoordinator], SensorEntity)
         )
 
     def _get_today(self) -> date:
-        """Get today's date using Home Assistant's timezone-aware datetime.
-
-        Returns:
-            Today's date in the configured timezone.
-        """
+        """Get today's date using Home Assistant's timezone-aware datetime."""
         return dt_util.now().date()
 
-    def _get_streak_start(self) -> date:
-        """Get the streak start date from coordinator data.
-
-        Returns:
-            The streak start date.
-        """
-        return date.fromisoformat(self.coordinator.data["streak_start"])
-
-
-class StreakSensor(StreakHubBaseSensor):
-    """Sensor showing the current streak in days.
-
-    State: Number of days since the last event (0 on event day).
-    Attributes: streak_start (ISO 8601 date string).
-    """
-
-    _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_native_unit_of_measurement = UNIT_DAYS
-    _attr_icon = ICON_STREAK
-
-    def __init__(
-        self,
-        coordinator: StreakHubCoordinator,
-        entry: ConfigEntry,
-    ) -> None:
-        """Initialize the streak sensor."""
-        super().__init__(coordinator, entry, ENTITY_STREAK)
+    @property
+    def native_value(self) -> Any:
+        """Return the state of the sensor."""
+        if self.coordinator.data is None:
+            return None
+        return self.entity_description.value_fn(self.coordinator, self._get_today())
 
     @property
-    def native_value(self) -> int:
-        """Return the current streak value in days.
-
-        Returns 0 if we are on the event day (today < streak_start).
-        Otherwise returns days since streak_start (inclusive).
-        """
-        streak_start = self._get_streak_start()
-        today = self._get_today()
-        return calculate_streak(streak_start, today)
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return additional state attributes.
-
-        Returns:
-            Dictionary with streak_start as ISO 8601 string.
-        """
-        return {
-            "streak_start": self.coordinator.data["streak_start"],
-        }
-
-
-class RankSensor(StreakHubBaseSensor):
-    """Sensor showing the current streak's rank in top 3.
-
-    State: 1, 2, 3 (if in top 3) or 0 (not in top 3).
-    Attributes: top_3 (list of top 3 streaks with rank, start, end, days).
-    """
-
-    _attr_state_class = None  # Not a measurement
-
-    def __init__(
-        self,
-        coordinator: StreakHubCoordinator,
-        entry: ConfigEntry,
-    ) -> None:
-        """Initialize the rank sensor."""
-        super().__init__(coordinator, entry, ENTITY_RANK)
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return additional state attributes."""
+        if self.coordinator.data is None:
+            return None
+        if self.entity_description.extra_state_attributes_fn is None:
+            return None
+        return self.entity_description.extra_state_attributes_fn(
+            self.coordinator, self._get_today()
+        )
 
     @property
-    def native_value(self) -> int:
-        """Return the rank of the current streak.
-
-        Returns 1, 2, or 3 if current streak is in top 3.
-        Returns 0 if not in top 3.
-        """
-        top_3 = self._calculate_top_3()
-        return calculate_rank(top_3)
-
-    @property
-    def icon(self) -> str:
-        """Return icon based on current rank.
-
-        Returns:
-            mdi:trophy for rank 1 (record!).
-            mdi:medal-outline for rank 2 or 3.
-            mdi:trophy-outline for not in top 3.
-        """
-        rank = self.native_value
-        if rank == 1:
-            return ICON_TROPHY
-        elif rank in (2, 3):
-            return ICON_MEDAL
-        return ICON_TROPHY_OUTLINE
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return additional state attributes.
-
-        Returns:
-            Dictionary with top_3 list containing rank, start, end, days.
-        """
-        return {
-            "top_3": self._calculate_top_3(),
-        }
-
-    def _calculate_top_3(self) -> list[dict[str, Any]]:
-        """Calculate the top 3 streaks.
-
-        Returns:
-            List of up to 3 entries with rank, start, end, days.
-            Current streak has end=None.
-        """
-        streak_start = self._get_streak_start()
-        today = self._get_today()
-        history = self.coordinator.data["history"]
-
-        return calculate_top_3(streak_start, history, today)
+    def icon(self) -> str | None:
+        """Return the icon for the sensor."""
+        if self.entity_description.icon_fn is not None and self.coordinator.data:
+            return self.entity_description.icon_fn(self.coordinator, self._get_today())
+        return self.entity_description.icon

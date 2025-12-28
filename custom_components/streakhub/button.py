@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
-from homeassistant.components.button import ButtonEntity
+from dataclasses import dataclass
+
+from homeassistant.components.button import (
+    ButtonEntity,
+    ButtonEntityDescription,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -12,6 +17,20 @@ from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, ENTITY_RESET, ICON_RESET
 from .coordinator import StreakHubCoordinator
+
+
+@dataclass(frozen=True, kw_only=True)
+class StreakHubButtonEntityDescription(ButtonEntityDescription):
+    """Describes a StreakHub button entity."""
+
+
+BUTTON_DESCRIPTIONS: tuple[StreakHubButtonEntityDescription, ...] = (
+    StreakHubButtonEntityDescription(
+        key=ENTITY_RESET,
+        translation_key=ENTITY_RESET,
+        icon=ICON_RESET,
+    ),
+)
 
 
 async def async_setup_entry(
@@ -28,38 +47,41 @@ async def async_setup_entry(
     """
     coordinator: StreakHubCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    async_add_entities([ResetButton(coordinator, entry)])
+    async_add_entities(
+        StreakHubButton(coordinator, description, entry)
+        for description in BUTTON_DESCRIPTIONS
+    )
 
 
-class ResetButton(CoordinatorEntity[StreakHubCoordinator], ButtonEntity):
+class StreakHubButton(CoordinatorEntity[StreakHubCoordinator], ButtonEntity):
     """Button to reset the current streak.
 
     Pressing this button means "the event happened today".
     The current streak ends, and a new one begins tomorrow.
     """
 
+    entity_description: StreakHubButtonEntityDescription
     _attr_has_entity_name = True
-    _attr_icon = ICON_RESET
 
     def __init__(
         self,
         coordinator: StreakHubCoordinator,
+        description: StreakHubButtonEntityDescription,
         entry: ConfigEntry,
     ) -> None:
-        """Initialize the reset button.
+        """Initialize the button.
 
         Args:
             coordinator: The data coordinator.
+            description: Entity description for this button.
             entry: Config entry.
         """
         super().__init__(coordinator)
+        self.entity_description = description
         self._entry = entry
 
-        # Unique ID based on entry ID and entity type
-        self._attr_unique_id = f"{entry.entry_id}_{ENTITY_RESET}"
-
-        # Translation key for entity name
-        self._attr_translation_key = ENTITY_RESET
+        # Unique ID based on entry ID and button key
+        self._attr_unique_id = f"{entry.entry_id}_{description.key}"
 
     @property
     def device_info(self) -> DeviceInfo:
