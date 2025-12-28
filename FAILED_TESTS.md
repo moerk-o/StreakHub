@@ -1,72 +1,38 @@
-# Fehlgeschlagene Tests - Analyse
+# Test-Status
 
 **Datum:** 28. Dezember 2025
-**Stand:** Nach Korrektur der 0-day-Tests
-**Gesamt:** 113 Tests | **Bestanden:** 103 | **Fehlgeschlagen:** 1 | **Übersprungen:** 9
+**Gesamt:** 113 Tests | **Bestanden:** 104 | **Fehlgeschlagen:** 0 | **Übersprungen:** 9
 
 ---
 
-## Durchgeführte Korrekturen
+## Übersprungene Tests (9)
 
-### Korrektur: 0-Tage-Streak-Berechnung (abgeschlossen)
-4 Tests erwarteten fälschlich, dass Streaks gespeichert werden, obwohl sie gemäß konzept.md 0 Tage sind:
-- ✅ test_button_press_on_streak_start_day → `assert len(history) == 0`
-- ✅ test_button_press_consecutive_days → `assert history[0]["days"] == 9`
-- ✅ test_service_history_correct → `assert history[0]["days"] == 6`
-- ✅ test_service_zero_day_old_streak → `assert len(history) == 0`
+### Config Flow Validierung (2 Tests)
 
-### Frühere Korrekturen
-- History-Berechnung 10 → 9 Tage (5 Tests)
-- UTC-Umstellung (5 Tests)
-- test_edge_very_long_streak: 1827 → 1828 Tage
-- test_config_flow_name_required: pytest.raises(InvalidData)
+Diese Tests sind übersprungen, weil die Config-Flow-Validierung für Zukunftsdaten noch nicht implementiert ist:
 
----
+| Test | Datei | Grund |
+|------|-------|-------|
+| `test_config_flow_date_day_after_tomorrow` | test_config_flow.py | Config Flow Validierung noch nicht implementiert |
+| `test_config_flow_date_far_future` | test_config_flow.py | Config Flow Validierung noch nicht implementiert |
 
-## Verbleibender 1 fehlgeschlagener Test
+### Storage Mocking für History (7 Tests)
 
-### test_storage_multiple_trackers
+Diese Tests benötigen vorpopulierte History-Daten im Storage, was noch nicht implementiert ist:
 
-**Datei:** `tests/test_storage.py:68`
-
-**Aktueller Fehler:** `homeassistant.config_entries.OperationNotAllowed`
-```
-The config entry 'Tracker B' (streakhub) with entry_id '...' cannot be set up
-because it is in state ConfigEntryState.LOADED, but needs to be in the
-ConfigEntryState.NOT_LOADED state
-```
-
-**Root Cause Analyse:**
-Der Test ist **FALSCH geschrieben** - er folgt nicht dem korrekten Home-Assistant-Verhalten.
-
-**Home-Assistant-Verhalten (setup.py Zeilen 458-473):**
-Wenn `async_setup(entry1)` aufgerufen wird und die Domain noch nicht geladen ist:
-1. Home Assistant ruft `async_setup_component(domain)` auf
-2. `async_setup_component` lädt **ALLE** Config Entries dieser Domain
-3. Also werden Entry 1 **und** Entry 2 automatisch geladen
-4. Der anschließende Aufruf `async_setup(entry2)` schlägt fehl, da Entry 2 bereits LOADED ist
-
-**Test-Ablauf (fehlerhaft):**
-```python
-entry1.add_to_hass(hass)
-entry2.add_to_hass(hass)
-await hass.config_entries.async_setup(entry1.entry_id)  # Lädt BEIDE Entries!
-await hass.config_entries.async_setup(entry2.entry_id)  # FEHLER: bereits geladen
-```
-
-**Korrektes Muster:**
-```python
-entry1.add_to_hass(hass)
-entry2.add_to_hass(hass)
-await hass.config_entries.async_setup(entry1.entry_id)  # Lädt beide automatisch
-await hass.async_block_till_done()
-# KEIN zweiter async_setup-Aufruf nötig!
-```
-
-**Fazit:** Der Test muss korrigiert werden - der zweite `async_setup`-Aufruf muss entfernt werden.
+| Test | Datei | Grund |
+|------|-------|-------|
+| `test_rank_sensor_icon_rank_2_3` | test_entities.py | Requires storage mocking for pre-populated history |
+| `test_rank_sensor_icon_rank_0` | test_entities.py | Requires storage mocking for pre-populated history |
+| `test_rank_current_is_rank_2` | test_ranking.py | Requires storage mocking for pre-populated history |
+| `test_rank_current_is_rank_3` | test_ranking.py | Requires storage mocking for pre-populated history |
+| `test_rank_current_not_in_top_3` | test_ranking.py | Requires storage mocking for pre-populated history |
+| `test_rank_tie_breaking` | test_ranking.py | Requires storage mocking for pre-populated history |
+| `test_rank_with_many_history_entries` | test_ranking.py | Requires storage mocking for pre-populated history |
 
 ---
 
 ## Nächste Schritte
 
-Test `test_storage_multiple_trackers` benötigt Korrektur: Den zweiten `async_setup(entry2)` Aufruf entfernen.
+1. **Config Flow Validierung:** Implementieren, dass Datumsangaben > morgen im Config Flow abgelehnt werden
+2. **Storage Mocking Fixture:** Ein Fixture erstellen, das `hass_storage` mit vorpopulierten History-Daten befüllt
