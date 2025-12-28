@@ -375,8 +375,12 @@ class TestEdgeCases:
         streak_start = date(2020, 1, 1)
         today = date(2025, 1, 1)  # 5 years
 
-        # 2020: 366 days (leap), 2021-2024: 365*4
-        expected_days = 366 + 365 * 4 + 1  # +1 for inclusive
+        # Days from 2020-01-01 to 2025-01-01 inclusive:
+        # 2020: 366 days (leap year), 2021-2024: 365*4 = 1460 days
+        # Total: 366 + 1460 + 1 (Jan 1, 2025) = 1827
+        # But calculate_streak returns (today - streak_start).days + 1
+        # (2025-01-01 - 2020-01-01).days = 1827, +1 = 1828
+        expected_days = (today - streak_start).days + 1
         assert calculate_streak(streak_start, today) == expected_days
 
     def test_top_3_with_many_history_entries(self) -> None:

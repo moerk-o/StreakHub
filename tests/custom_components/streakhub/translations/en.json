@@ -1,0 +1,58 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add StreakHub Tracker",
+        "description": "Create a new StreakHub tracker to monitor days between events.",
+        "data": {
+          "name": "Name",
+          "initial_date": "Initial start date (optional)"
+        }
+      }
+    },
+    "error": {
+      "already_configured": "A tracker with this name already exists."
+    },
+    "abort": {
+      "already_configured": "A tracker with this name already exists."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "streak": {
+        "name": "Streak"
+      },
+      "rank": {
+        "name": "Rank"
+      }
+    },
+    "button": {
+      "reset": {
+        "name": "Reset"
+      }
+    }
+  },
+  "services": {
+    "set_streak_start": {
+      "name": "Set Streak Start",
+      "description": "Sets the start date of the current streak (for missed button presses).",
+      "fields": {
+        "date": {
+          "name": "Date",
+          "description": "The first day WITHOUT the event (day after the missed event)."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "date_in_future": {
+      "message": "The date cannot be in the future."
+    },
+    "date_before_streak_start": {
+      "message": "The date must be after the current streak start ({streak_start})."
+    },
+    "invalid_date_format": {
+      "message": "Invalid date format."
+    }
+  }
+}

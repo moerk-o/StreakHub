@@ -1,0 +1,16 @@
+# Test dependencies for StreakHub integration
+# Install with: pip install -r requirements-test.txt
+
+# Core testing
+pytest==8.3.4
+pytest-asyncio==0.24.0
+pytest-cov==6.0.0
+
+# Home Assistant testing framework
+pytest-homeassistant-custom-component==0.13.205
+
+# Time manipulation for date-based tests
+freezegun==1.5.1
+
+# Code quality (also used in CI)
+ruff==0.8.6
