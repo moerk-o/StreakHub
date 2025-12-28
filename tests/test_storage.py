@@ -88,8 +88,9 @@ async def test_storage_multiple_trackers(hass: HomeAssistant) -> None:
     entry2.add_to_hass(hass)
 
     with freeze_time("2025-01-10 12:00:00+00:00"):
+        # Only call async_setup once - Home Assistant automatically loads
+        # all config entries of a domain when the integration is first set up
         assert await hass.config_entries.async_setup(entry1.entry_id)
-        assert await hass.config_entries.async_setup(entry2.entry_id)
         await hass.async_block_till_done()
 
     # Verify both trackers exist with different data

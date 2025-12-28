@@ -29,26 +29,44 @@
 
 **Datei:** `tests/test_storage.py:68`
 
-**Fehler:** `homeassistant.exceptions.ServiceNotFound: streakhub.set_streak_start`
+**Aktueller Fehler:** `homeassistant.config_entries.OperationNotAllowed`
+```
+The config entry 'Tracker B' (streakhub) with entry_id '...' cannot be set up
+because it is in state ConfigEntryState.LOADED, but needs to be in the
+ConfigEntryState.NOT_LOADED state
+```
 
-**Analyse:**
-Der Test verwendet nur den Button-Service (`button.press`), nicht `streakhub.set_streak_start`. Der Fehler deutet auf ein Problem bei der Service-Registrierung hin, wenn mehrere Config Entries geladen werden.
+**Root Cause Analyse:**
+Der Test ist **FALSCH geschrieben** - er folgt nicht dem korrekten Home-Assistant-Verhalten.
 
-**Test-Ablauf:**
-1. Zwei MockConfigEntry erstellen (Tracker A, Tracker B)
-2. Beide zu hass hinzufügen
-3. Beide async_setup aufrufen
-4. Button von Tracker A drücken → **ServiceNotFound**
+**Home-Assistant-Verhalten (setup.py Zeilen 458-473):**
+Wenn `async_setup(entry1)` aufgerufen wird und die Domain noch nicht geladen ist:
+1. Home Assistant ruft `async_setup_component(domain)` auf
+2. `async_setup_component` lädt **ALLE** Config Entries dieser Domain
+3. Also werden Entry 1 **und** Entry 2 automatisch geladen
+4. Der anschließende Aufruf `async_setup(entry2)` schlägt fehl, da Entry 2 bereits LOADED ist
 
-**Mögliche Ursachen:**
-1. Service wird nur beim ersten Config Entry registriert
-2. Test-Isolation-Problem
-3. Race-Condition bei mehreren async_setup Aufrufen
+**Test-Ablauf (fehlerhaft):**
+```python
+entry1.add_to_hass(hass)
+entry2.add_to_hass(hass)
+await hass.config_entries.async_setup(entry1.entry_id)  # Lädt BEIDE Entries!
+await hass.config_entries.async_setup(entry2.entry_id)  # FEHLER: bereits geladen
+```
 
-**Korrektur:** Separat untersuchen - vermutlich Bug in `__init__.py` bei Service-Registrierung.
+**Korrektes Muster:**
+```python
+entry1.add_to_hass(hass)
+entry2.add_to_hass(hass)
+await hass.config_entries.async_setup(entry1.entry_id)  # Lädt beide automatisch
+await hass.async_block_till_done()
+# KEIN zweiter async_setup-Aufruf nötig!
+```
+
+**Fazit:** Der Test muss korrigiert werden - der zweite `async_setup`-Aufruf muss entfernt werden.
 
 ---
 
 ## Nächste Schritte
 
-Test 5 (test_storage_multiple_trackers) benötigt separate Untersuchung der Service-Registrierung.
+Test `test_storage_multiple_trackers` benötigt Korrektur: Den zweiten `async_setup(entry2)` Aufruf entfernen.
