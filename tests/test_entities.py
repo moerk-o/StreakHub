@@ -1,9 +1,13 @@
 """Test StreakHub entity properties and attributes."""
 
+from datetime import date
+
 import pytest
 from freezegun import freeze_time
 from homeassistant.components.sensor import SensorStateClass
 from homeassistant.core import HomeAssistant
+
+from conftest import STORAGE_KEY, build_hass_storage_entry
 
 
 @pytest.mark.asyncio
@@ -105,22 +109,58 @@ async def test_rank_sensor_icon_rank_1(
 
 @pytest.mark.asyncio
 async def test_rank_sensor_icon_rank_2_3(
-    hass: HomeAssistant, config_entry_with_history
+    hass: HomeAssistant, config_entry_with_history, hass_storage: dict
 ) -> None:
     """Test that rank sensor shows medal icon when rank is 2 or 3."""
-    # This test requires a config entry with history where current streak
-    # ranks 2nd or 3rd. We need to mock storage data to have longer historical streaks.
-    # For now, skip this test as it requires storage mocking
-    pytest.skip("Requires storage mocking for history data")
+    # Setup: Current streak = 5 days, History has 1 longer streak (10 days)
+    # At 2025-01-20, current streak started 2025-01-16 = 5 days -> rank 2
+    hass_storage[STORAGE_KEY] = build_hass_storage_entry(
+        tracker_id="mit_history",
+        current_streak_start=date(2025, 1, 16),
+        history_streaks=[
+            (date(2024, 11, 1), 10),  # 10 days = rank 1
+        ],
+    )
+
+    config_entry_with_history.add_to_hass(hass)
+
+    with freeze_time("2025-01-20 12:00:00+00:00"):
+        assert await hass.config_entries.async_setup(config_entry_with_history.entry_id)
+        await hass.async_block_till_done()
+
+    rank_sensor = hass.states.get("sensor.mit_history_rank")
+    assert rank_sensor is not None
+    assert int(rank_sensor.state) == 2
+    assert rank_sensor.attributes.get("icon") == "mdi:medal-outline"
 
 
 @pytest.mark.asyncio
 async def test_rank_sensor_icon_rank_0(
-    hass: HomeAssistant, config_entry_with_history
+    hass: HomeAssistant, config_entry_with_history, hass_storage: dict
 ) -> None:
     """Test that rank sensor shows trophy-outline icon when rank is 0 (not in top 3)."""
-    # This test requires history with at least 3 longer streaks
-    pytest.skip("Requires storage mocking for history data")
+    # Setup: Current streak = 3 days, History has 3 longer streaks
+    # At 2025-01-20, current streak started 2025-01-18 = 3 days -> rank 0
+    hass_storage[STORAGE_KEY] = build_hass_storage_entry(
+        tracker_id="mit_history",
+        current_streak_start=date(2025, 1, 18),
+        history_streaks=[
+            (date(2024, 9, 1), 30),   # 30 days = rank 1
+            (date(2024, 10, 1), 20),  # 20 days = rank 2
+            (date(2024, 11, 1), 10),  # 10 days = rank 3
+        ],
+    )
+
+    config_entry_with_history.add_to_hass(hass)
+
+    with freeze_time("2025-01-20 12:00:00+00:00"):
+        assert await hass.config_entries.async_setup(config_entry_with_history.entry_id)
+        await hass.async_block_till_done()
+
+    rank_sensor = hass.states.get("sensor.mit_history_rank")
+    assert rank_sensor is not None
+    assert int(rank_sensor.state) == 0
+    assert rank_sensor.attributes.get("icon") == "mdi:trophy-outline"
 
 
 @pytest.mark.asyncio

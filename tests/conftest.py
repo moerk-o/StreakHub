@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -221,3 +222,103 @@ def get_date_from_state(state: str) -> str:
     if "T" in state:
         return state.split("T")[0]
     return state
+
+
+# =============================================================================
+# Storage Data Generator
+# =============================================================================
+
+
+def build_storage_data(
+    tracker_id: str,
+    current_streak_start: date,
+    history_streaks: list[tuple[date, int]] | None = None,
+) -> dict[str, Any]:
+    """Generate storage data for hass_storage fixture.
+
+    This function creates properly formatted storage data that can be used
+    with the hass_storage fixture to pre-populate history for tests.
+
+    Args:
+        tracker_id: Tracker ID (e.g., "mit_history", must match config entry unique_id)
+        current_streak_start: Start date of the current streak
+        history_streaks: List of (start_date, days) tuples for historical streaks.
+                        The end date is calculated as start_date + days - 1.
+
+    Returns:
+        Dict structure for hass_storage["streakhub.streakhub"]["data"]
+
+    Example:
+        >>> data = build_storage_data(
+        ...     tracker_id="test_tracker",
+        ...     current_streak_start=date(2025, 1, 20),
+        ...     history_streaks=[
+        ...         (date(2024, 11, 1), 30),  # 30-day streak
+        ...         (date(2024, 12, 10), 20), # 20-day streak
+        ...     ],
+        ... )
+        >>> hass_storage["streakhub.streakhub"] = {
+        ...     "version": 1,
+        ...     "data": data,
+        ... }
+    """
+    history: list[dict[str, Any]] = []
+
+    if history_streaks:
+        for start, days in history_streaks:
+            end = start + timedelta(days=days - 1)
+            history.append({
+                "start": start.isoformat(),
+                "end": end.isoformat(),
+                "days": days,
+            })
+
+    return {
+        "trackers": {
+            tracker_id: {
+                "streak_start": current_streak_start.isoformat(),
+                "history": history,
+            }
+        }
+    }
+
+
+def build_hass_storage_entry(
+    tracker_id: str,
+    current_streak_start: date,
+    history_streaks: list[tuple[date, int]] | None = None,
+    version: int = 1,
+) -> dict[str, Any]:
+    """Build a complete hass_storage entry for streakhub.
+
+    Convenience wrapper around build_storage_data that includes the version
+    and proper structure for direct use with hass_storage fixture.
+
+    Args:
+        tracker_id: Tracker ID (must match config entry unique_id)
+        current_streak_start: Start date of the current streak
+        history_streaks: List of (start_date, days) tuples for historical streaks
+        version: Storage version (default: 1)
+
+    Returns:
+        Complete hass_storage entry dict with "version" and "data" keys.
+
+    Example:
+        >>> hass_storage["streakhub"] = build_hass_storage_entry(
+        ...     tracker_id="test_tracker",
+        ...     current_streak_start=date(2025, 1, 20),
+        ...     history_streaks=[(date(2024, 11, 1), 30)],
+        ... )
+    """
+    return {
+        "version": version,
+        "data": build_storage_data(
+            tracker_id=tracker_id,
+            current_streak_start=current_streak_start,
+            history_streaks=history_streaks,
+        ),
+    }
+
+
+# Storage key constant for tests
+STORAGE_KEY = "streakhub"

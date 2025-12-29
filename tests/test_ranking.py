@@ -1,8 +1,12 @@
 """Test StreakHub ranking calculation."""
 
+from datetime import date
+
 import pytest
 from freezegun import freeze_time
 from homeassistant.core import HomeAssistant
+
+from conftest import STORAGE_KEY, build_hass_storage_entry
 
 
 @pytest.mark.asyncio
@@ -56,35 +60,122 @@ async def test_rank_current_is_record(
 
 @pytest.mark.asyncio
 async def test_rank_current_is_rank_2(
-    hass: HomeAssistant, config_entry_with_history
+    hass: HomeAssistant, config_entry_with_history, hass_storage: dict
 ) -> None:
     """Test current streak ranks #2 when it's the second longest."""
-    # Requires storage mocking - skip for now
-    pytest.skip("Requires storage mocking for pre-populated history")
+    # Setup: Current streak = 5 days, History has 1 streak with 10 days
+    # At 2025-01-20, current streak started 2025-01-15 = 6 days
+    # History: 10 days (rank 1) -> Current: 6 days (rank 2)
+    hass_storage[STORAGE_KEY] = build_hass_storage_entry(
+        tracker_id="mit_history",
+        current_streak_start=date(2025, 1, 15),
+        history_streaks=[
+            (date(2024, 11, 1), 10),  # 10 days = rank 1
+        ],
+    )
+
+    config_entry_with_history.add_to_hass(hass)
+
+    with freeze_time("2025-01-20 12:00:00+00:00"):
+        assert await hass.config_entries.async_setup(config_entry_with_history.entry_id)
+        await hass.async_block_till_done()
+
+    rank_sensor = hass.states.get("sensor.mit_history_rank")
+    assert rank_sensor is not None
+    assert int(rank_sensor.state) == 2
 
 
 @pytest.mark.asyncio
 async def test_rank_current_is_rank_3(
-    hass: HomeAssistant, config_entry_with_history
+    hass: HomeAssistant, config_entry_with_history, hass_storage: dict
 ) -> None:
     """Test current streak ranks #3 when it's the third longest."""
-    pytest.skip("Requires storage mocking for pre-populated history")
+    # Setup: Current streak = 5 days, History has 2 longer streaks
+    # At 2025-01-20, current streak started 2025-01-16 = 5 days
+    # History: 20 days (rank 1), 10 days (rank 2) -> Current: 5 days (rank 3)
+    hass_storage[STORAGE_KEY] = build_hass_storage_entry(
+        tracker_id="mit_history",
+        current_streak_start=date(2025, 1, 16),
+        history_streaks=[
+            (date(2024, 10, 1), 20),  # 20 days = rank 1
+            (date(2024, 11, 1), 10),  # 10 days = rank 2
+        ],
+    )
+
+    config_entry_with_history.add_to_hass(hass)
+
+    with freeze_time("2025-01-20 12:00:00+00:00"):
+        assert await hass.config_entries.async_setup(config_entry_with_history.entry_id)
+        await hass.async_block_till_done()
+
+    rank_sensor = hass.states.get("sensor.mit_history_rank")
+    assert rank_sensor is not None
+    assert int(rank_sensor.state) == 3
 
 
 @pytest.mark.asyncio
 async def test_rank_current_not_in_top_3(
-    hass: HomeAssistant, config_entry_with_history
+    hass: HomeAssistant, config_entry_with_history, hass_storage: dict
 ) -> None:
     """Test rank is 0 when current streak is not in top 3."""
-    pytest.skip("Requires storage mocking for pre-populated history")
+    # Setup: Current streak = 3 days, History has 3 longer streaks
+    # At 2025-01-20, current streak started 2025-01-18 = 3 days
+    # History: 30 days (rank 1), 20 days (rank 2), 10 days (rank 3)
+    # -> Current: 3 days (rank 0, not in top 3)
+    hass_storage[STORAGE_KEY] = build_hass_storage_entry(
+        tracker_id="mit_history",
+        current_streak_start=date(2025, 1, 18),
+        history_streaks=[
+            (date(2024, 9, 1), 30),   # 30 days = rank 1
+            (date(2024, 10, 1), 20),  # 20 days = rank 2
+            (date(2024, 11, 1), 10),  # 10 days = rank 3
+        ],
+    )
+
+    config_entry_with_history.add_to_hass(hass)
+
+    with freeze_time("2025-01-20 12:00:00+00:00"):
+        assert await hass.config_entries.async_setup(config_entry_with_history.entry_id)
+        await hass.async_block_till_done()
+
+    rank_sensor = hass.states.get("sensor.mit_history_rank")
+    assert rank_sensor is not None
+    assert int(rank_sensor.state) == 0
 
 
 @pytest.mark.asyncio
 async def test_rank_tie_breaking(
-    hass: HomeAssistant, config_entry_with_history
+    hass: HomeAssistant, config_entry_with_history, hass_storage: dict
 ) -> None:
     """Test that newer streaks win tie-breakers."""
-    pytest.skip("Requires storage mocking for pre-populated history")
+    # Setup: Current streak = 10 days, History has 1 streak with same 10 days
+    # At 2025-01-20, current streak started 2025-01-11 = 10 days
+    # History: 10 days (older start date)
+    # Tie-breaker: newer start date wins -> Current should be rank 1
+    hass_storage[STORAGE_KEY] = build_hass_storage_entry(
+        tracker_id="mit_history",
+        current_streak_start=date(2025, 1, 11),  # 10 days at 2025-01-20
+        history_streaks=[
+            (date(2024, 11, 1), 10),  # Same 10 days but older
+        ],
+    )
+
+    config_entry_with_history.add_to_hass(hass)
+
+    with freeze_time("2025-01-20 12:00:00+00:00"):
+        assert await hass.config_entries.async_setup(config_entry_with_history.entry_id)
+        await hass.async_block_till_done()
+
+    rank_sensor = hass.states.get("sensor.mit_history_rank")
+    assert rank_sensor is not None
+    # Current streak is newer, so it wins the tie-breaker
+    assert int(rank_sensor.state) == 1
+
+    # Verify top_3 order: current (newer) before historical (older)
+    top_3 = rank_sensor.attributes.get("top_3", [])
+    assert len(top_3) == 2
+    assert top_3[0]["end"] is None  # Current streak at rank 1
+    assert top_3[1]["end"] is not None  # Historical streak at rank 2
 
 
 @pytest.mark.asyncio
@@ -177,7 +268,44 @@ async def test_rank_updated_after_service(
 
 @pytest.mark.asyncio
 async def test_rank_with_many_history_entries(
-    hass: HomeAssistant, config_entry_with_history
+    hass: HomeAssistant, config_entry_with_history, hass_storage: dict
 ) -> None:
     """Test that top 3 is correctly selected from 100+ history entries."""
-    pytest.skip("Requires storage mocking for pre-populated history")
+    # Generate 100 history entries with varying lengths
+    # Entry 0: 100 days (best)
+    # Entry 1: 99 days
+    # ...
+    # Entry 99: 1 day (worst)
+    history_streaks = []
+    base_date = date(2020, 1, 1)
+    for i in range(100):
+        # Space them out to avoid overlaps
+        start = date(base_date.year + (i // 12), (i % 12) + 1, 1)
+        days = 100 - i  # 100, 99, 98, ..., 1
+        history_streaks.append((start, days))
+
+    # Current streak: 5 days at 2025-01-20, starting 2025-01-16
+    hass_storage[STORAGE_KEY] = build_hass_storage_entry(
+        tracker_id="mit_history",
+        current_streak_start=date(2025, 1, 16),
+        history_streaks=history_streaks,
+    )
+
+    config_entry_with_history.add_to_hass(hass)
+
+    with freeze_time("2025-01-20 12:00:00+00:00"):
+        assert await hass.config_entries.async_setup(config_entry_with_history.entry_id)
+        await hass.async_block_till_done()
+
+    rank_sensor = hass.states.get("sensor.mit_history_rank")
+    assert rank_sensor is not None
+
+    # Current streak (5 days) should not be in top 3
+    # Top 3 should be: 100 days, 99 days, 98 days
+    assert int(rank_sensor.state) == 0
+
+    top_3 = rank_sensor.attributes.get("top_3", [])
+    assert len(top_3) == 3
+    assert top_3[0]["days"] == 100
+    assert top_3[1]["days"] == 99
+    assert top_3[2]["days"] == 98

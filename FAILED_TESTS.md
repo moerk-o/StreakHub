@@ -1,29 +1,45 @@
 # Test-Status
 
 **Datum:** 29. Dezember 2025
-**Gesamt:** 113 Tests | **Bestanden:** 106 | **Fehlgeschlagen:** 0 | **Übersprungen:** 7
+**Gesamt:** 113 Tests | **Bestanden:** 113 | **Fehlgeschlagen:** 0 | **Übersprungen:** 0
 
 ---
 
-## Übersprungene Tests (7)
+## Alle Tests bestanden
 
-### Storage Mocking für History (7 Tests)
+Alle 113 Tests laufen erfolgreich durch, inklusive der 7 Tests, die zuvor übersprungen wurden.
 
-Diese Tests benötigen vorpopulierte History-Daten im Storage, was noch nicht implementiert ist:
+### Implementierte Storage-Mocking-Lösung
 
-| Test | Datei | Grund |
-|------|-------|-------|
-| `test_rank_sensor_icon_rank_2_3` | test_entities.py | Requires storage mocking for pre-populated history |
-| `test_rank_sensor_icon_rank_0` | test_entities.py | Requires storage mocking for pre-populated history |
-| `test_rank_current_is_rank_2` | test_ranking.py | Requires storage mocking for pre-populated history |
-| `test_rank_current_is_rank_3` | test_ranking.py | Requires storage mocking for pre-populated history |
-| `test_rank_current_not_in_top_3` | test_ranking.py | Requires storage mocking for pre-populated history |
-| `test_rank_tie_breaking` | test_ranking.py | Requires storage mocking for pre-populated history |
-| `test_rank_with_many_history_entries` | test_ranking.py | Requires storage mocking for pre-populated history |
+Die 7 ehemals übersprungenen Tests wurden durch einen Storage-Daten-Generator in `tests/conftest.py` aktiviert:
+
+```python
+from conftest import STORAGE_KEY, build_hass_storage_entry
+
+hass_storage[STORAGE_KEY] = build_hass_storage_entry(
+    tracker_id="mit_history",
+    current_streak_start=date(2025, 1, 16),
+    history_streaks=[
+        (date(2024, 11, 1), 10),  # 10 days
+        (date(2024, 12, 1), 20),  # 20 days
+    ],
+)
+```
+
+### Aktivierte Tests
+
+| Test | Datei | Status |
+|------|-------|--------|
+| `test_rank_sensor_icon_rank_2_3` | test_entities.py | ✅ Bestanden |
+| `test_rank_sensor_icon_rank_0` | test_entities.py | ✅ Bestanden |
+| `test_rank_current_is_rank_2` | test_ranking.py | ✅ Bestanden |
+| `test_rank_current_is_rank_3` | test_ranking.py | ✅ Bestanden |
+| `test_rank_current_not_in_top_3` | test_ranking.py | ✅ Bestanden |
+| `test_rank_tie_breaking` | test_ranking.py | ✅ Bestanden |
+| `test_rank_with_many_history_entries` | test_ranking.py | ✅ Bestanden |
 
 ---
 
 ## Nächste Schritte
 
-1. **Storage Mocking Fixture:** Ein Fixture erstellen, das `hass_storage` mit vorpopulierten History-Daten befüllt
-
+Keine offenen Test-Aufgaben.
