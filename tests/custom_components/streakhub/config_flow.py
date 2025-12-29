@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 import voluptuous as vol
@@ -39,15 +39,37 @@ class StreakHubConfigFlow(ConfigFlow, domain=DOMAIN):
             # Normalize initial_date to ISO string if provided
             initial_date = user_input.get(CONF_INITIAL_DATE)
             if initial_date is None:
-                initial_date = date.today().isoformat()
-            elif isinstance(initial_date, date):
-                initial_date = initial_date.isoformat()
+                initial_date = date.today()
+            elif isinstance(initial_date, str):
+                initial_date = date.fromisoformat(initial_date)
+
+            # Validate: date must not be in the future (> tomorrow)
+            tomorrow = date.today() + timedelta(days=1)
+            if initial_date > tomorrow:
+                errors[CONF_INITIAL_DATE] = "date_in_future"
+                return self.async_show_form(
+                    step_id="user",
+                    data_schema=vol.Schema(
+                        {
+                            vol.Required(
+                                CONF_NAME, default=user_input.get(CONF_NAME, "")
+                            ): str,
+                            vol.Optional(
+                                CONF_INITIAL_DATE,
+                                default=user_input.get(
+                                    CONF_INITIAL_DATE, date.today().isoformat()
+                                ),
+                            ): selector.DateSelector(),
+                        }
+                    ),
+                    errors=errors,
+                )
 
             return self.async_create_entry(
                 title=user_input[CONF_NAME],
                 data={
                     CONF_NAME: user_input[CONF_NAME],
-                    CONF_INITIAL_DATE: initial_date,
+                    CONF_INITIAL_DATE: initial_date.isoformat(),
                 },
             )
 

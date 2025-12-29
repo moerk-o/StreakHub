@@ -11,7 +11,8 @@
       }
     },
     "error": {
-      "already_configured": "A tracker with this name already exists."
+      "already_configured": "A tracker with this name already exists.",
+      "date_in_future": "The date cannot be in the future."
     },
     "abort": {
       "already_configured": "A tracker with this name already exists."

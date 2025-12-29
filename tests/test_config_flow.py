@@ -117,17 +117,45 @@ async def test_config_flow_date_tomorrow(hass: HomeAssistant) -> None:
 @pytest.mark.asyncio
 async def test_config_flow_date_day_after_tomorrow(hass: HomeAssistant) -> None:
     """Test that date after tomorrow is rejected (today+2 not allowed)."""
-    # NOTE: According to TESTKONZEPT.md, dates more than 1 day in future should be rejected.
-    # However, the current config_flow.py implementation does NOT validate dates.
-    # This test documents the expected behavior but will fail until validation is added.
-    pytest.skip("Date validation not yet implemented in config_flow.py")
+    result = await hass.config_entries.flow.async_init(
+        "streakhub",
+        context={"source": "user"},
+    )
+
+    day_after_tomorrow = date.today() + timedelta(days=2)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            "name": "Future Tracker",
+            "initial_date": day_after_tomorrow,
+        },
+    )
+
+    # Should show form again with error
+    assert result["type"] == FlowResultType.FORM
+    assert result["errors"] == {"initial_date": "date_in_future"}
 
 
 @pytest.mark.asyncio
 async def test_config_flow_date_far_future(hass: HomeAssistant) -> None:
     """Test that far future dates are rejected."""
-    # NOTE: Date validation not yet implemented in config_flow.py
-    pytest.skip("Date validation not yet implemented in config_flow.py")
+    result = await hass.config_entries.flow.async_init(
+        "streakhub",
+        context={"source": "user"},
+    )
+
+    far_future = date.today() + timedelta(days=365)  # 1 year in future
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            "name": "Far Future Tracker",
+            "initial_date": far_future,
+        },
+    )
+
+    # Should show form again with error
+    assert result["type"] == FlowResultType.FORM
+    assert result["errors"] == {"initial_date": "date_in_future"}
 
 
 @pytest.mark.asyncio

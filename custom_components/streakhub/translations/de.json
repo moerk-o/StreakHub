@@ -11,7 +11,8 @@
       }
     },
     "error": {
-      "already_configured": "Ein Tracker mit diesem Namen existiert bereits."
+      "already_configured": "Ein Tracker mit diesem Namen existiert bereits.",
+      "date_in_future": "Das Datum darf nicht in der Zukunft liegen."
     },
     "abort": {
       "already_configured": "Ein Tracker mit diesem Namen existiert bereits."
