@@ -56,8 +56,8 @@ streakhub/
 │       └── ...
 ├── tests/
 │   ├── conftest.py                   # Fixtures + Plugin-Setup
-│   ├── custom_components/            # Kopie für pytest-Plugin
-│   │   └── streakhub/               # (Symlink oder Kopie)
+│   ├── custom_components/            # Kopie für pytest-Plugin (siehe 2.5)
+│   │   └── streakhub/               # Muss mit Produktiv-Code synchron sein!
 │   ├── test_logic.py                 # Unit-Tests (bereits vorhanden)
 │   ├── test_setup.py                 # Setup & Translations
 │   ├── test_entities.py              # Entity-Eigenschaften
@@ -96,6 +96,24 @@ filterwarnings = [
     "ignore::DeprecationWarning",
 ]
 ```
+
+### 2.5 Synchronisation: tests/custom_components/
+
+> **WICHTIG:** Das pytest-homeassistant-custom-component Plugin lädt die Integration
+> aus `tests/custom_components/`, NICHT aus `custom_components/`!
+
+Nach jeder Änderung am Produktiv-Code muss die Kopie aktualisiert werden:
+
+```bash
+# Gesamtes Verzeichnis synchronisieren
+cp -r custom_components/streakhub/* tests/custom_components/streakhub/
+
+# Oder einzelne Datei nach Änderung
+cp custom_components/streakhub/config_flow.py tests/custom_components/streakhub/
+```
+
+**Fehlerquelle:** Wenn Tests fehlschlagen obwohl der Produktiv-Code korrekt ist,
+prüfen ob `tests/custom_components/streakhub/` aktuell ist!
 
 ### 2.4 conftest.py Struktur
 
