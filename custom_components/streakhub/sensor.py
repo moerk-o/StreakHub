@@ -83,11 +83,9 @@ def _get_rank_attributes(coordinator: StreakHubCoordinator, today: date) -> dict
 def _get_rank_icon(coordinator: StreakHubCoordinator, today: date) -> str:
     """Get rank sensor icon based on current rank."""
     rank = _get_rank_value(coordinator, today)
-    if rank == 1:
+    if rank in (1, 2, 3):
         return ICON_TROPHY
-    elif rank in (2, 3):
-        return ICON_MEDAL
-    return ICON_TROPHY_OUTLINE
+    return ICON_MEDAL
 
 
 SENSOR_DESCRIPTIONS: tuple[StreakHubSensorEntityDescription, ...] = (
