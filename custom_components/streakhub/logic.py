@@ -24,6 +24,7 @@ class TrackerData(TypedDict):
 
     streak_start: str  # ISO 8601 date string
     history: list[HistoryEntry]
+    last_event_date: str | None  # ISO 8601 date string, None = no undo possible
 
 
 class Top3Entry(TypedDict):
@@ -206,9 +207,12 @@ def process_event(
     if history_entry is not None:
         new_history.append(history_entry)
 
+    # Set last_event_date only if we created a history entry (undo possible)
+    # If no history entry was created (0-day streak), undo makes no sense
     new_tracker_data = TrackerData(
         streak_start=new_streak_start.isoformat(),
         history=new_history,
+        last_event_date=event_day.isoformat() if history_entry is not None else None,
     )
 
     return new_tracker_data, history_entry
@@ -282,6 +286,58 @@ def process_set_streak_start(
     return process_event(tracker_data, event_day)
 
 
+def undo_last_event(tracker_data: TrackerData) -> TrackerData | None:
+    """Undo the last event (button press or set_streak_start).
+
+    This restores the previous streak by:
+    1. Removing the last history entry
+    2. Setting streak_start back to the removed entry's start
+    3. Clearing last_event_date (no further undo possible)
+
+    Args:
+        tracker_data: Current tracker data (not mutated).
+
+    Returns:
+        New TrackerData with restored streak, or None if undo not possible.
+        Undo is not possible when:
+        - last_event_date is None (no recent event to undo)
+        - history is empty (nothing to restore)
+
+    Examples:
+        >>> data = {
+        ...     'streak_start': '2025-01-21',
+        ...     'history': [{'start': '2025-01-01', 'end': '2025-01-19', 'days': 19}],
+        ...     'last_event_date': '2025-01-20'
+        ... }
+        >>> result = undo_last_event(data)
+        >>> result['streak_start']
+        '2025-01-01'
+        >>> result['history']
+        []
+        >>> result['last_event_date'] is None
+        True
+    """
+    # Check if undo is possible
+    if tracker_data.get("last_event_date") is None:
+        return None
+
+    if not tracker_data["history"]:
+        return None
+
+    # Get the last history entry (the one to restore)
+    last_entry = tracker_data["history"][-1]
+
+    # Create new history without the last entry
+    new_history = tracker_data["history"][:-1]
+
+    # Restore the previous streak
+    return TrackerData(
+        streak_start=last_entry["start"],
+        history=new_history,
+        last_event_date=None,  # Clear - no further undo possible
+    )
+
+
 def create_initial_tracker_data(initial_date: date) -> TrackerData:
     """Create initial tracker data for a new tracker.
 
@@ -294,6 +350,7 @@ def create_initial_tracker_data(initial_date: date) -> TrackerData:
     return TrackerData(
         streak_start=initial_date.isoformat(),
         history=[],
+        last_event_date=None,
     )
 
 

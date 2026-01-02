@@ -17,6 +17,7 @@ from .logic import (
     create_initial_tracker_data,
     process_event,
     process_set_streak_start,
+    undo_last_event,
 )
 
 if TYPE_CHECKING:
@@ -174,6 +175,43 @@ class StreakHubCoordinator(DataUpdateCoordinator[TrackerData]):
 
         # Refresh all entities
         await self.async_refresh()
+
+    async def async_undo_last_event(self) -> bool:
+        """Undo the last event (button press or set_streak_start).
+
+        Restores the previous streak by removing the last history entry
+        and resetting streak_start to the removed entry's start date.
+
+        Returns:
+            True if undo was successful, False if not possible.
+        """
+        if self._storage_data is None or self.data is None:
+            _LOGGER.error("Cannot undo: storage data not loaded")
+            return False
+
+        # Try to undo (pure function)
+        new_tracker_data = undo_last_event(self.data)
+
+        if new_tracker_data is None:
+            _LOGGER.warning(
+                "Tracker '%s': Undo not possible (no recent event or empty history)",
+                self._tracker_id,
+            )
+            return False
+
+        _LOGGER.info(
+            "Tracker '%s': Undid last event, restored streak starting %s",
+            self._tracker_id,
+            new_tracker_data["streak_start"],
+        )
+
+        # Update storage
+        self._storage_data["trackers"][self._tracker_id] = new_tracker_data
+        await self._store.async_save(self._storage_data)
+
+        # Refresh all entities
+        await self.async_refresh()
+        return True
 
 
 async def async_get_or_create_store(hass: HomeAssistant) -> Store[StorageData]:

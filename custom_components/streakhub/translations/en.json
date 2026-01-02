@@ -43,6 +43,10 @@
           "description": "The first day WITHOUT the event (day after the missed event)."
         }
       }
+    },
+    "undo_last_event": {
+      "name": "Undo Last Event",
+      "description": "Undoes the last button press or set_streak_start, restoring the previous streak."
     }
   },
   "exceptions": {
@@ -54,6 +58,9 @@
     },
     "invalid_date_format": {
       "message": "Invalid date format."
+    },
+    "undo_not_possible": {
+      "message": "Undo not possible. No recent event to undo or history is empty."
     }
   }
 }

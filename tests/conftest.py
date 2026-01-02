@@ -233,6 +233,7 @@ def build_storage_data(
     tracker_id: str,
     current_streak_start: date,
     history_streaks: list[tuple[date, int]] | None = None,
+    last_event_date: date | None = None,
 ) -> dict[str, Any]:
     """Generate storage data for hass_storage fixture.
 
@@ -244,6 +245,8 @@ def build_storage_data(
         current_streak_start: Start date of the current streak
         history_streaks: List of (start_date, days) tuples for historical streaks.
                         The end date is calculated as start_date + days - 1.
+        last_event_date: Date of the last event (for undo functionality).
+                        If set, undo is possible. If None, undo is not possible.
 
     Returns:
         Dict structure for hass_storage["streakhub.streakhub"]["data"]
@@ -256,6 +259,7 @@ def build_storage_data(
         ...         (date(2024, 11, 1), 30),  # 30-day streak
         ...         (date(2024, 12, 10), 20), # 20-day streak
         ...     ],
+        ...     last_event_date=date(2025, 1, 19),  # Event that ended the last streak
         ... )
         >>> hass_storage["streakhub.streakhub"] = {
         ...     "version": 1,
@@ -278,6 +282,7 @@ def build_storage_data(
             tracker_id: {
                 "streak_start": current_streak_start.isoformat(),
                 "history": history,
+                "last_event_date": last_event_date.isoformat() if last_event_date else None,
             }
         }
     }
@@ -287,6 +292,7 @@ def build_hass_storage_entry(
     tracker_id: str,
     current_streak_start: date,
     history_streaks: list[tuple[date, int]] | None = None,
+    last_event_date: date | None = None,
     version: int = 1,
 ) -> dict[str, Any]:
     """Build a complete hass_storage entry for streakhub.
@@ -298,6 +304,7 @@ def build_hass_storage_entry(
         tracker_id: Tracker ID (must match config entry unique_id)
         current_streak_start: Start date of the current streak
         history_streaks: List of (start_date, days) tuples for historical streaks
+        last_event_date: Date of the last event (for undo functionality)
         version: Storage version (default: 1)
 
     Returns:
@@ -308,6 +315,7 @@ def build_hass_storage_entry(
         ...     tracker_id="test_tracker",
         ...     current_streak_start=date(2025, 1, 20),
         ...     history_streaks=[(date(2024, 11, 1), 30)],
+        ...     last_event_date=date(2025, 1, 19),
         ... )
     """
     return {
@@ -316,6 +324,7 @@ def build_hass_storage_entry(
             tracker_id=tracker_id,
             current_streak_start=current_streak_start,
             history_streaks=history_streaks,
+            last_event_date=last_event_date,
         ),
     }
 

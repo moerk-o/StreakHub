@@ -1,9 +1,13 @@
-"""Test StreakHub set_streak_start service."""
+"""Test StreakHub services (set_streak_start and undo_last_event)."""
+
+from datetime import date
 
 import pytest
 from freezegun import freeze_time
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
+
+from conftest import STORAGE_KEY, build_hass_storage_entry
 
 
 @pytest.mark.asyncio
@@ -380,3 +384,279 @@ async def test_service_zero_day_old_streak(
         coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
         history = coordinator.data.get("history", [])
         assert len(history) == 0
+
+
+# =============================================================================
+# undo_last_event Service Tests
+# =============================================================================
+
+
+@pytest.mark.asyncio
+async def test_undo_after_button_press(
+    hass: HomeAssistant, basic_config_entry
+) -> None:
+    """Test that undo restores streak after button press."""
+    basic_config_entry.add_to_hass(hass)
+
+    with freeze_time("2025-01-10 12:00:00+00:00"):
+        assert await hass.config_entries.async_setup(basic_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        # Initial: streak start = Jan 1, streak = 10 days
+        streak_sensor = hass.states.get("sensor.zucker_streak")
+        assert int(streak_sensor.state) == 10
+        assert streak_sensor.attributes.get("streak_start") == "2025-01-01"
+
+        # Press reset button
+        await hass.services.async_call(
+            "button",
+            "press",
+            {"entity_id": "button.zucker_reset"},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+
+        # After button: streak start = Jan 11, streak = 0
+        streak_sensor = hass.states.get("sensor.zucker_streak")
+        assert int(streak_sensor.state) == 0
+        assert streak_sensor.attributes.get("streak_start") == "2025-01-11"
+
+        # Undo the button press
+        await hass.services.async_call(
+            "streakhub",
+            "undo_last_event",
+            {"entity_id": "sensor.zucker_streak"},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+
+        # After undo: back to original state
+        streak_sensor = hass.states.get("sensor.zucker_streak")
+        assert int(streak_sensor.state) == 10
+        assert streak_sensor.attributes.get("streak_start") == "2025-01-01"
+
+        # History should be empty again
+        coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
+        assert len(coordinator.data.get("history", [])) == 0
+
+
+@pytest.mark.asyncio
+async def test_undo_after_set_streak_start(
+    hass: HomeAssistant, basic_config_entry
+) -> None:
+    """Test that undo restores streak after set_streak_start service."""
+    basic_config_entry.add_to_hass(hass)
+
+    with freeze_time("2025-01-10 12:00:00+00:00"):
+        assert await hass.config_entries.async_setup(basic_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        # Initial: streak start = Jan 1, streak = 10 days
+        streak_sensor = hass.states.get("sensor.zucker_streak")
+        assert streak_sensor.attributes.get("streak_start") == "2025-01-01"
+
+        # Set new streak start
+        await hass.services.async_call(
+            "streakhub",
+            "set_streak_start",
+            {
+                "entity_id": "sensor.zucker_streak",
+                "date": "2025-01-08",
+            },
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+
+        # After service: streak start = Jan 8, streak = 3 days
+        streak_sensor = hass.states.get("sensor.zucker_streak")
+        assert streak_sensor.attributes.get("streak_start") == "2025-01-08"
+        assert int(streak_sensor.state) == 3
+
+        # Undo the set_streak_start
+        await hass.services.async_call(
+            "streakhub",
+            "undo_last_event",
+            {"entity_id": "sensor.zucker_streak"},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+
+        # After undo: back to original state
+        streak_sensor = hass.states.get("sensor.zucker_streak")
+        assert streak_sensor.attributes.get("streak_start") == "2025-01-01"
+        assert int(streak_sensor.state) == 10
+
+
+@pytest.mark.asyncio
+async def test_undo_not_possible_no_recent_event(
+    hass: HomeAssistant, basic_config_entry
+) -> None:
+    """Test that undo fails when no recent event exists."""
+    basic_config_entry.add_to_hass(hass)
+
+    with freeze_time("2025-01-10 12:00:00+00:00"):
+        assert await hass.config_entries.async_setup(basic_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        # No button press, no set_streak_start - undo should fail
+        with pytest.raises(ServiceValidationError):
+            await hass.services.async_call(
+                "streakhub",
+                "undo_last_event",
+                {"entity_id": "sensor.zucker_streak"},
+                blocking=True,
+            )
+
+
+@pytest.mark.asyncio
+async def test_undo_not_possible_twice(
+    hass: HomeAssistant, basic_config_entry
+) -> None:
+    """Test that undo can only be done once per event."""
+    basic_config_entry.add_to_hass(hass)
+
+    with freeze_time("2025-01-10 12:00:00+00:00"):
+        assert await hass.config_entries.async_setup(basic_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        # Press button
+        await hass.services.async_call(
+            "button",
+            "press",
+            {"entity_id": "button.zucker_reset"},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+
+        # First undo - should succeed
+        await hass.services.async_call(
+            "streakhub",
+            "undo_last_event",
+            {"entity_id": "sensor.zucker_streak"},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+
+        # Second undo - should fail
+        with pytest.raises(ServiceValidationError):
+            await hass.services.async_call(
+                "streakhub",
+                "undo_last_event",
+                {"entity_id": "sensor.zucker_streak"},
+                blocking=True,
+            )
+
+
+@pytest.mark.asyncio
+async def test_undo_with_existing_history(
+    hass: HomeAssistant, config_entry_with_history, hass_storage: dict
+) -> None:
+    """Test that undo only removes the last history entry."""
+    # Setup with existing history and a recent event
+    hass_storage[STORAGE_KEY] = build_hass_storage_entry(
+        tracker_id="mit_history",
+        current_streak_start=date(2025, 1, 16),  # Current streak: 5 days on Jan 20
+        history_streaks=[
+            (date(2024, 11, 1), 10),  # Old history entry
+            (date(2025, 1, 1), 14),   # Recent entry from button press on Jan 15
+        ],
+        last_event_date=date(2025, 1, 15),  # Button was pressed on Jan 15
+    )
+
+    config_entry_with_history.add_to_hass(hass)
+
+    with freeze_time("2025-01-20 12:00:00+00:00"):
+        assert await hass.config_entries.async_setup(config_entry_with_history.entry_id)
+        await hass.async_block_till_done()
+
+        # Verify initial state
+        coordinator = hass.data["streakhub"][config_entry_with_history.entry_id]
+        assert len(coordinator.data.get("history", [])) == 2
+
+        # Undo the last event
+        await hass.services.async_call(
+            "streakhub",
+            "undo_last_event",
+            {"entity_id": "sensor.mit_history_streak"},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+
+        # Should restore to the second-to-last history entry's start
+        streak_sensor = hass.states.get("sensor.mit_history_streak")
+        assert streak_sensor.attributes.get("streak_start") == "2025-01-01"
+
+        # History should have only 1 entry now (the old one)
+        coordinator = hass.data["streakhub"][config_entry_with_history.entry_id]
+        history = coordinator.data.get("history", [])
+        assert len(history) == 1
+        assert history[0]["start"] == "2024-11-01"
+        assert history[0]["days"] == 10
+
+
+@pytest.mark.asyncio
+async def test_undo_on_rank_sensor(
+    hass: HomeAssistant, basic_config_entry
+) -> None:
+    """Test that undo works when called on rank sensor."""
+    basic_config_entry.add_to_hass(hass)
+
+    with freeze_time("2025-01-10 12:00:00+00:00"):
+        assert await hass.config_entries.async_setup(basic_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        # Press button
+        await hass.services.async_call(
+            "button",
+            "press",
+            {"entity_id": "button.zucker_reset"},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+
+        # Undo via rank sensor
+        await hass.services.async_call(
+            "streakhub",
+            "undo_last_event",
+            {"entity_id": "sensor.zucker_rank"},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+
+        # Verify it worked (check streak sensor)
+        streak_sensor = hass.states.get("sensor.zucker_streak")
+        assert streak_sensor.attributes.get("streak_start") == "2025-01-01"
+
+
+@pytest.mark.asyncio
+async def test_undo_on_reset_button(
+    hass: HomeAssistant, basic_config_entry
+) -> None:
+    """Test that undo works when called on reset button."""
+    basic_config_entry.add_to_hass(hass)
+
+    with freeze_time("2025-01-10 12:00:00+00:00"):
+        assert await hass.config_entries.async_setup(basic_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        # Press button
+        await hass.services.async_call(
+            "button",
+            "press",
+            {"entity_id": "button.zucker_reset"},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+
+        # Undo via reset button entity
+        await hass.services.async_call(
+            "streakhub",
+            "undo_last_event",
+            {"entity_id": "button.zucker_reset"},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+
+        # Verify it worked
+        streak_sensor = hass.states.get("sensor.zucker_streak")
+        assert streak_sensor.attributes.get("streak_start") == "2025-01-01"

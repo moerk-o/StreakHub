@@ -34,6 +34,7 @@ PLATFORMS_LIST: list[Platform] = [Platform.SENSOR, Platform.BUTTON]
 
 # Service constants
 SERVICE_SET_STREAK_START = "set_streak_start"
+SERVICE_UNDO_LAST_EVENT = "undo_last_event"
 ATTR_DATE = "date"
 
 
@@ -213,7 +214,7 @@ async def async_setup_services(hass: HomeAssistant) -> None:
                 new_start.isoformat(),
             )
 
-    # Register the service
+    # Register the set_streak_start service
     hass.services.async_register(
         DOMAIN,
         SERVICE_SET_STREAK_START,
@@ -222,6 +223,68 @@ async def async_setup_services(hass: HomeAssistant) -> None:
             {
                 vol.Required("entity_id"): cv.entity_ids,
                 vol.Required(ATTR_DATE): cv.date,
+            }
+        ),
+    )
+
+    async def handle_undo_last_event(call: ServiceCall) -> None:
+        """Handle the undo_last_event service call.
+
+        Args:
+            call: Service call data.
+
+        Raises:
+            ServiceValidationError: If undo is not possible.
+        """
+        entity_ids = call.data.get("entity_id", [])
+        if isinstance(entity_ids, str):
+            entity_ids = [entity_ids]
+
+        # Get entity registry to find config entries
+        ent_reg = er.async_get(hass)
+
+        for entity_id in entity_ids:
+            # Look up entity
+            entity_entry = ent_reg.async_get(entity_id)
+            if entity_entry is None:
+                _LOGGER.warning("Entity %s not found", entity_id)
+                continue
+
+            if entity_entry.platform != DOMAIN:
+                _LOGGER.warning(
+                    "Entity %s is not a StreakHub entity", entity_id
+                )
+                continue
+
+            # Get coordinator from config entry
+            config_entry_id = entity_entry.config_entry_id
+            if config_entry_id is None or config_entry_id not in hass.data[DOMAIN]:
+                _LOGGER.warning(
+                    "Config entry for entity %s not found", entity_id
+                )
+                continue
+
+            coordinator: StreakHubCoordinator = hass.data[DOMAIN][config_entry_id]
+
+            # Execute undo
+            success = await coordinator.async_undo_last_event()
+
+            if not success:
+                raise ServiceValidationError(
+                    translation_domain=DOMAIN,
+                    translation_key="undo_not_possible",
+                )
+
+            _LOGGER.info("Undid last event for %s", entity_id)
+
+    # Register the undo_last_event service
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_UNDO_LAST_EVENT,
+        handle_undo_last_event,
+        schema=vol.Schema(
+            {
+                vol.Required("entity_id"): cv.entity_ids,
             }
         ),
     )

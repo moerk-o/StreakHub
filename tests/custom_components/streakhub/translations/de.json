@@ -11,7 +11,8 @@
       }
     },
     "error": {
-      "already_configured": "Ein Tracker mit diesem Namen existiert bereits."
+      "already_configured": "Ein Tracker mit diesem Namen existiert bereits.",
+      "date_in_future": "Das Datum darf nicht in der Zukunft liegen."
     },
     "abort": {
       "already_configured": "Ein Tracker mit diesem Namen existiert bereits."
@@ -42,6 +43,10 @@
           "description": "Der erste Tag OHNE das Ereignis (Tag nach dem vergessenen Ereignis)."
         }
       }
+    },
+    "undo_last_event": {
+      "name": "Letztes Ereignis rückgängig machen",
+      "description": "Macht den letzten Button-Druck oder set_streak_start rückgängig und stellt den vorherigen Streak wieder her."
     }
   },
   "exceptions": {
@@ -53,6 +58,9 @@
     },
     "invalid_date_format": {
       "message": "Ungültiges Datumsformat."
+    },
+    "undo_not_possible": {
+      "message": "Rückgängig machen nicht möglich. Kein kürzliches Ereignis zum Rückgängig machen oder die Historie ist leer."
     }
   }
 }
