@@ -150,58 +150,32 @@ If you forgot to press the button on January 24th, call the service with date `2
 - Date cannot be in the future
 - Date must be after the current streak start
 
-## Dashboard Examples
+### `streakhub.undo_last_event`
 
-### Simple Entities Card
+Restores the previous streak (for accidental button presses or corrections).
 
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `entity_id` | string | Yes | Entity ID of a StreakHub sensor |
+
+**Example:**
 ```yaml
-type: entities
-entities:
-  - entity: sensor.sugar_streak
-    name: Days without sugar
-  - entity: sensor.sugar_rank
-    name: Ranking
-  - entity: button.sugar_reset
-    name: Had sugar!
+service: streakhub.undo_last_event
+target:
+  entity_id: sensor.sugar_streak
 ```
 
-### Trophy Display with Template
+**Use Case:**
+If you accidentally pressed the reset button or called `set_streak_start` by mistake, this service restores your previous streak.
 
-```yaml
-type: markdown
-content: |
-  {% set rank = states('sensor.sugar_rank') | int %}
-  {% if rank == 1 %}
-  # 🥇 NEW RECORD!
-  {% elif rank == 2 %}
-  # 🥈 2nd Place
-  {% elif rank == 3 %}
-  # 🥉 3rd Place
-  {% else %}
-  # Keep going!
-  {% endif %}
+**Limitations:**
+- Only one undo per event (cannot undo twice in a row)
+- Only works if there is a previous streak in history
 
-  **{{ states('sensor.sugar_streak') }} days** without sugar
-```
+## Companion Card
 
-### Top 3 Leaderboard
-
-```yaml
-type: markdown
-content: |
-  ## 🏆 Leaderboard
-  {% set top3 = state_attr('sensor.sugar_rank', 'top_3') %}
-  {% for streak in top3 %}
-  {% if streak.rank == 1 %}🥇{% elif streak.rank == 2 %}🥈{% else %}🥉{% endif %} **{{ streak.days }} days** ({{ streak.start }}{% if streak.end %} – {{ streak.end }}{% else %} – ongoing{% endif %})
-  {% endfor %}
-```
-
-### Get Record Directly
-
-```yaml
-# The record is always the first entry in top_3
-{{ state_attr('sensor.sugar_rank', 'top_3')[0].days }} days
-```
+For the best dashboard experience, check out the [StreakHub Card](https://github.com/moerk-o/streakhub-card) - a custom Lovelace card with visual editor that displays your streaks with trophy icons, rank indicators, and a quick reset flow.
 
 ## How Streaks Work
 
@@ -258,10 +232,6 @@ Ensure:
 - The date format is correct (YYYY-MM-DD)
 - The date is not in the future
 - The date is after the current streak start
-
-### Data location
-
-Tracker data is stored in `.storage/streakhub` in your Home Assistant configuration directory.
 
 ## License
 
