@@ -40,6 +40,11 @@
       "reset": {
         "name": "Reset"
       }
+    },
+    "number": {
+      "goal": {
+        "name": "Goal"
+      }
     }
   },
   "services": {

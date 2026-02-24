@@ -89,14 +89,7 @@ class StreakHubCoordinator(DataUpdateCoordinator[TrackerData]):
             )
             raise KeyError(f"Tracker '{self._tracker_id}' not found in storage")
 
-        # Migration: Add goal field if missing (for existing trackers)
-        tracker_data = self._storage_data["trackers"][self._tracker_id]
-        if "goal" not in tracker_data:
-            _LOGGER.debug("Migrating tracker '%s': adding goal field", self._tracker_id)
-            tracker_data["goal"] = 0
-            await self._store.async_save(self._storage_data)
-
-        return tracker_data
+        return self._storage_data["trackers"][self._tracker_id]
 
     async def async_handle_event(self, event_day: date) -> None:
         """Process a button press / event.
@@ -219,6 +212,33 @@ class StreakHubCoordinator(DataUpdateCoordinator[TrackerData]):
         # Refresh all entities
         await self.async_refresh()
         return True
+
+    async def async_set_goal(self, new_goal: int) -> None:
+        """Set a new streak goal.
+
+        Updates the goal value in storage and refreshes all entities.
+        This triggers updates to days_to_goal sensor and has_goal binary sensor.
+
+        Args:
+            new_goal: New goal value in days (0 = no goal).
+        """
+        if self._storage_data is None or self.data is None:
+            _LOGGER.error("Cannot set goal: storage data not loaded")
+            return
+
+        _LOGGER.info(
+            "Tracker '%s': Setting goal to %d days (previous: %d)",
+            self._tracker_id,
+            new_goal,
+            self.data.get("goal", 0),
+        )
+
+        # Update goal in storage
+        self._storage_data["trackers"][self._tracker_id]["goal"] = new_goal
+        await self._store.async_save(self._storage_data)
+
+        # Refresh all entities
+        await self.async_refresh()
 
 
 async def async_get_or_create_store(hass: HomeAssistant) -> Store[StorageData]:

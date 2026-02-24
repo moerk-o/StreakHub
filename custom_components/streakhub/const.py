@@ -19,9 +19,10 @@ ENTITY_RANK: Final = "rank"
 ENTITY_RESET: Final = "reset"
 ENTITY_DAYS_TO_GOAL: Final = "days_to_goal"
 ENTITY_HAS_GOAL: Final = "has_goal"
+ENTITY_GOAL: Final = "goal"
 
 # Platforms
-PLATFORMS: Final = ["sensor", "button", "binary_sensor"]
+PLATFORMS: Final = ["sensor", "button", "binary_sensor", "number"]
 
 # Icons
 ICON_STREAK: Final = "mdi:counter"
@@ -32,6 +33,7 @@ ICON_MEDAL: Final = "mdi:medal-outline"
 ICON_GOAL_NOT_REACHED: Final = "mdi:check-decagram-outline"
 ICON_GOAL_REACHED: Final = "mdi:check-decagram"
 ICON_HAS_GOAL: Final = "mdi:flag-checkered"
+ICON_GOAL: Final = "mdi:target"
 
 # Unit
 UNIT_DAYS: Final = "d"

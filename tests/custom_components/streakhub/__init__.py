@@ -30,7 +30,12 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS_LIST: list[Platform] = [Platform.SENSOR, Platform.BUTTON, Platform.BINARY_SENSOR]
+PLATFORMS_LIST: list[Platform] = [
+    Platform.SENSOR,
+    Platform.BUTTON,
+    Platform.BINARY_SENSOR,
+    Platform.NUMBER,
+]
 
 # Service constants
 SERVICE_SET_STREAK_START = "set_streak_start"

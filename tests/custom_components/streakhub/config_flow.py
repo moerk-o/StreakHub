@@ -65,7 +65,6 @@ class StreakHubConfigFlow(ConfigFlow, domain=DOMAIN):
                             ): selector.NumberSelector(
                                 selector.NumberSelectorConfig(
                                     min=0,
-                                    max=999,
                                     step=1,
                                     mode=selector.NumberSelectorMode.BOX,
                                     unit_of_measurement="days",
@@ -98,7 +97,6 @@ class StreakHubConfigFlow(ConfigFlow, domain=DOMAIN):
                     vol.Optional(CONF_GOAL, default=0): selector.NumberSelector(
                         selector.NumberSelectorConfig(
                             min=0,
-                            max=999,
                             step=1,
                             mode=selector.NumberSelectorMode.BOX,
                             unit_of_measurement="days",
