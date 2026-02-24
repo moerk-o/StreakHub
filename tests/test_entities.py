@@ -196,3 +196,100 @@ async def test_reset_button_icon(hass: HomeAssistant, basic_config_entry) -> Non
     reset_button = hass.states.get("button.zucker_reset")
     assert reset_button is not None
     assert reset_button.attributes.get("icon") == "mdi:restart"
+
+
+@pytest.mark.asyncio
+async def test_days_to_goal_consistency(
+    hass: HomeAssistant, hass_storage: dict
+) -> None:
+    """Test that goal_date attribute is consistent with days_to_goal value.
+
+    Verifies that the calculated goal_date matches the days_to_goal value,
+    ensuring that (goal_date - today).days == days_to_goal when goal is set.
+    """
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    # Test scenario: Goal of 100 days, streak started 10 days ago
+    hass_storage[STORAGE_KEY] = build_hass_storage_entry(
+        tracker_id="test_goal",
+        current_streak_start=date(2025, 1, 1),
+        goal=100,
+    )
+
+    config_entry = MockConfigEntry(
+        domain="streakhub",
+        data={
+            "name": "Test Goal",
+            "initial_date": "2025-01-01",
+            "goal": 100,
+        },
+        unique_id="test_goal",
+        title="Test Goal",
+        version=1,
+    )
+    config_entry.add_to_hass(hass)
+
+    # Test at different points in time
+    test_dates = [
+        "2025-01-01 12:00:00+00:00",  # Day 0: streak=0, days_to_goal=100
+        "2025-01-15 12:00:00+00:00",  # Day 14: streak=14, days_to_goal=86
+        "2025-02-20 12:00:00+00:00",  # Day 50: streak=50, days_to_goal=50
+        "2025-04-10 12:00:00+00:00",  # Day 99: streak=99, days_to_goal=1
+        "2025-04-11 12:00:00+00:00",  # Day 100: streak=100, days_to_goal=0 (GOAL!)
+        "2025-04-21 12:00:00+00:00",  # Day 110: streak=110, days_to_goal=-10 (OVER!)
+    ]
+
+    for test_date_str in test_dates:
+        with freeze_time(test_date_str):
+            # Reload the integration at this point in time
+            await hass.config_entries.async_unload(config_entry.entry_id)
+            await hass.async_block_till_done()
+
+            assert await hass.config_entries.async_setup(config_entry.entry_id)
+            await hass.async_block_till_done()
+
+            days_to_goal_sensor = hass.states.get("sensor.test_goal_days_to_goal")
+            assert days_to_goal_sensor is not None
+
+            # Get values
+            days_to_goal = int(days_to_goal_sensor.state)
+            goal_date_str = days_to_goal_sensor.attributes.get("goal_date")
+            goal = days_to_goal_sensor.attributes.get("goal")
+
+            assert goal == 100
+
+            # Parse dates
+            test_date = date.fromisoformat(test_date_str[:10])
+            goal_date = date.fromisoformat(goal_date_str)
+
+            # Verify consistency: (goal_date - today).days == days_to_goal
+            actual_days_diff = (goal_date - test_date).days
+
+            assert actual_days_diff == days_to_goal, (
+                f"Inconsistency at {test_date_str}: "
+                f"goal_date={goal_date}, today={test_date}, "
+                f"(goal_date - today).days={actual_days_diff}, "
+                f"but days_to_goal={days_to_goal}"
+            )
+
+
+@pytest.mark.asyncio
+async def test_days_to_goal_no_goal(hass: HomeAssistant, basic_config_entry) -> None:
+    """Test that goal_date attribute is not present when goal is 0."""
+    basic_config_entry.add_to_hass(hass)
+
+    with freeze_time("2025-01-10 12:00:00+00:00"):
+        assert await hass.config_entries.async_setup(basic_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    days_to_goal_sensor = hass.states.get("sensor.zucker_days_to_goal")
+    assert days_to_goal_sensor is not None
+
+    # When goal=0, sensor should be unknown (no calculable value)
+    assert days_to_goal_sensor.state == "unknown"
+
+    # goal_date should NOT be present
+    assert days_to_goal_sensor.attributes.get("goal_date") is None
+
+    # But goal attribute should still be there
+    assert days_to_goal_sensor.attributes.get("goal") == 0

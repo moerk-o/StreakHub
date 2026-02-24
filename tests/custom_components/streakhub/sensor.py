@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -118,7 +118,16 @@ def _get_days_to_goal_attributes(
     coordinator: StreakHubCoordinator, today: date
 ) -> dict[str, Any]:
     """Get days-to-goal sensor attributes."""
-    return {"goal": coordinator.data.get("goal", 0)}
+    goal = coordinator.data.get("goal", 0)
+    attributes: dict[str, Any] = {"goal": goal}
+
+    # Add goal_date if goal is set
+    if goal > 0:
+        streak_start = date.fromisoformat(coordinator.data["streak_start"])
+        goal_date = streak_start + timedelta(days=goal - 1)
+        attributes["goal_date"] = goal_date.isoformat()
+
+    return attributes
 
 
 SENSOR_DESCRIPTIONS: tuple[StreakHubSensorEntityDescription, ...] = (
