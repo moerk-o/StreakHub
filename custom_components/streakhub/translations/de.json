@@ -3,10 +3,11 @@
     "step": {
       "user": {
         "title": "StreakHub Tracker hinzufügen",
-        "description": "Erstelle einen neuen StreakHub Tracker um Tage zwischen Ereignissen zu zählen.",
+        "description": "Erstelle einen neuen StreakHub Tracker um Tage zwischen Ereignissen zu zählen. Setze ein Ziel um den Fortschritt zu einer Zielanzahl von Tagen zu verfolgen.",
         "data": {
           "name": "Name",
-          "initial_date": "Initiales Startdatum (optional)"
+          "initial_date": "Initiales Startdatum (optional)",
+          "goal": "Streak-Ziel (Tage, 0 = kein Ziel)"
         }
       }
     },
@@ -25,11 +26,24 @@
       },
       "rank": {
         "name": "Platzierung"
+      },
+      "days_to_goal": {
+        "name": "Tage bis Ziel"
+      }
+    },
+    "binary_sensor": {
+      "has_goal": {
+        "name": "Hat Ziel"
       }
     },
     "button": {
       "reset": {
         "name": "Zurücksetzen"
+      }
+    },
+    "number": {
+      "goal": {
+        "name": "Ziel"
       }
     }
   },

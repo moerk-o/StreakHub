@@ -234,6 +234,7 @@ def build_storage_data(
     current_streak_start: date,
     history_streaks: list[tuple[date, int]] | None = None,
     last_event_date: date | None = None,
+    goal: int = 0,
 ) -> dict[str, Any]:
     """Generate storage data for hass_storage fixture.
 
@@ -247,6 +248,7 @@ def build_storage_data(
                         The end date is calculated as start_date + days - 1.
         last_event_date: Date of the last event (for undo functionality).
                         If set, undo is possible. If None, undo is not possible.
+        goal: Streak goal in days (0 = no goal, >0 = goal in days)
 
     Returns:
         Dict structure for hass_storage["streakhub.streakhub"]["data"]
@@ -260,6 +262,7 @@ def build_storage_data(
         ...         (date(2024, 12, 10), 20), # 20-day streak
         ...     ],
         ...     last_event_date=date(2025, 1, 19),  # Event that ended the last streak
+        ...     goal=100,  # 100-day goal
         ... )
         >>> hass_storage["streakhub.streakhub"] = {
         ...     "version": 1,
@@ -283,6 +286,7 @@ def build_storage_data(
                 "streak_start": current_streak_start.isoformat(),
                 "history": history,
                 "last_event_date": last_event_date.isoformat() if last_event_date else None,
+                "goal": goal,
             }
         }
     }
@@ -293,6 +297,7 @@ def build_hass_storage_entry(
     current_streak_start: date,
     history_streaks: list[tuple[date, int]] | None = None,
     last_event_date: date | None = None,
+    goal: int = 0,
     version: int = 1,
 ) -> dict[str, Any]:
     """Build a complete hass_storage entry for streakhub.
@@ -305,6 +310,7 @@ def build_hass_storage_entry(
         current_streak_start: Start date of the current streak
         history_streaks: List of (start_date, days) tuples for historical streaks
         last_event_date: Date of the last event (for undo functionality)
+        goal: Streak goal in days (0 = no goal, >0 = goal in days)
         version: Storage version (default: 1)
 
     Returns:
@@ -316,6 +322,7 @@ def build_hass_storage_entry(
         ...     current_streak_start=date(2025, 1, 20),
         ...     history_streaks=[(date(2024, 11, 1), 30)],
         ...     last_event_date=date(2025, 1, 19),
+        ...     goal=100,
         ... )
     """
     return {
@@ -325,6 +332,7 @@ def build_hass_storage_entry(
             current_streak_start=current_streak_start,
             history_streaks=history_streaks,
             last_event_date=last_event_date,
+            goal=goal,
         ),
     }
 

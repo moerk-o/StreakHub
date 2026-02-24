@@ -3,10 +3,11 @@
     "step": {
       "user": {
         "title": "Add StreakHub Tracker",
-        "description": "Create a new StreakHub tracker to monitor days between events.",
+        "description": "Create a new StreakHub tracker to monitor days between events. Set a goal to track progress towards a target number of days.",
         "data": {
           "name": "Name",
-          "initial_date": "Initial start date (optional)"
+          "initial_date": "Initial start date (optional)",
+          "goal": "Streak Goal (days, 0 = no goal)"
         }
       }
     },
@@ -25,11 +26,24 @@
       },
       "rank": {
         "name": "Rank"
+      },
+      "days_to_goal": {
+        "name": "Days to Goal"
+      }
+    },
+    "binary_sensor": {
+      "has_goal": {
+        "name": "Has Goal"
       }
     },
     "button": {
       "reset": {
         "name": "Reset"
+      }
+    },
+    "number": {
+      "goal": {
+        "name": "Goal"
       }
     }
   },

@@ -25,6 +25,7 @@ class TrackerData(TypedDict):
     streak_start: str  # ISO 8601 date string
     history: list[HistoryEntry]
     last_event_date: str | None  # ISO 8601 date string, None = no undo possible
+    goal: int  # 0 = no goal, >0 = goal in days
 
 
 class Top3Entry(TypedDict):
@@ -213,6 +214,7 @@ def process_event(
         streak_start=new_streak_start.isoformat(),
         history=new_history,
         last_event_date=event_day.isoformat() if history_entry is not None else None,
+        goal=tracker_data.get("goal", 0),  # Preserve goal
     )
 
     return new_tracker_data, history_entry
@@ -335,14 +337,16 @@ def undo_last_event(tracker_data: TrackerData) -> TrackerData | None:
         streak_start=last_entry["start"],
         history=new_history,
         last_event_date=None,  # Clear - no further undo possible
+        goal=tracker_data.get("goal", 0),  # Preserve goal
     )
 
 
-def create_initial_tracker_data(initial_date: date) -> TrackerData:
+def create_initial_tracker_data(initial_date: date, goal: int = 0) -> TrackerData:
     """Create initial tracker data for a new tracker.
 
     Args:
         initial_date: The initial streak start date.
+        goal: Target days for the streak (0 = no goal).
 
     Returns:
         New TrackerData with empty history.
@@ -351,6 +355,7 @@ def create_initial_tracker_data(initial_date: date) -> TrackerData:
         streak_start=initial_date.isoformat(),
         history=[],
         last_event_date=None,
+        goal=goal,
     )
 
 
@@ -361,3 +366,31 @@ def create_initial_storage_data() -> StorageData:
         New StorageData with empty trackers dict.
     """
     return StorageData(trackers={})
+
+
+def calculate_days_to_goal(current_streak: int, goal: int) -> int | None:
+    """Calculate days remaining to goal (negative if exceeded).
+
+    Args:
+        current_streak: Current streak in days.
+        goal: Target days for the streak (0 = no goal).
+
+    Returns:
+        None if goal is 0 (no goal set).
+        Positive number if goal not yet reached (days remaining).
+        0 if goal reached exactly today.
+        Negative number if goal exceeded (days over goal).
+
+    Examples:
+        >>> calculate_days_to_goal(30, 100)
+        70
+        >>> calculate_days_to_goal(100, 100)
+        0
+        >>> calculate_days_to_goal(120, 100)
+        -20
+        >>> calculate_days_to_goal(50, 0)
+
+    """
+    if goal == 0:
+        return None
+    return goal - current_streak

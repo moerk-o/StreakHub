@@ -213,6 +213,33 @@ class StreakHubCoordinator(DataUpdateCoordinator[TrackerData]):
         await self.async_refresh()
         return True
 
+    async def async_set_goal(self, new_goal: int) -> None:
+        """Set a new streak goal.
+
+        Updates the goal value in storage and refreshes all entities.
+        This triggers updates to days_to_goal sensor and has_goal binary sensor.
+
+        Args:
+            new_goal: New goal value in days (0 = no goal).
+        """
+        if self._storage_data is None or self.data is None:
+            _LOGGER.error("Cannot set goal: storage data not loaded")
+            return
+
+        _LOGGER.info(
+            "Tracker '%s': Setting goal to %d days (previous: %d)",
+            self._tracker_id,
+            new_goal,
+            self.data.get("goal", 0),
+        )
+
+        # Update goal in storage
+        self._storage_data["trackers"][self._tracker_id]["goal"] = new_goal
+        await self._store.async_save(self._storage_data)
+
+        # Refresh all entities
+        await self.async_refresh()
+
 
 async def async_get_or_create_store(hass: HomeAssistant) -> Store[StorageData]:
     """Get or create the shared storage instance.
@@ -241,6 +268,7 @@ async def async_initialize_tracker(
     store: Store[StorageData],
     tracker_id: str,
     initial_date: date,
+    goal: int = 0,
 ) -> None:
     """Initialize a new tracker in storage if it doesn't exist.
 
@@ -249,6 +277,7 @@ async def async_initialize_tracker(
         store: The shared storage instance.
         tracker_id: Unique identifier for the tracker.
         initial_date: Initial streak start date.
+        goal: Target days for the streak (0 = no goal).
     """
     storage_data = await store.async_load()
 
@@ -257,12 +286,13 @@ async def async_initialize_tracker(
 
     if tracker_id not in storage_data["trackers"]:
         _LOGGER.info(
-            "Initializing new tracker '%s' with start date %s",
+            "Initializing new tracker '%s' with start date %s and goal %d",
             tracker_id,
             initial_date.isoformat(),
+            goal,
         )
         storage_data["trackers"][tracker_id] = create_initial_tracker_data(
-            initial_date
+            initial_date, goal
         )
         await store.async_save(storage_data)
     else:
