@@ -80,3 +80,7 @@ dmypy.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Guide symlinks (point to central versions)
+TESTING_GUIDE.md
+RELEASE_GUIDE.md
