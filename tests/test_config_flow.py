@@ -203,3 +203,43 @@ async def test_config_flow_unique_id_generation(hass: HomeAssistant) -> None:
     entry = hass.config_entries.async_get_entry(result["result"].entry_id)
     assert entry is not None
     assert entry.unique_id == "test_with_spaces"
+
+
+@pytest.mark.asyncio
+async def test_config_flow_with_goal(hass: HomeAssistant) -> None:
+    """Test that goal can be set in config flow."""
+    result = await hass.config_entries.flow.async_init(
+        "streakhub",
+        context={"source": "user"},
+    )
+    assert result["type"] == FlowResultType.FORM
+
+    # Submit with goal
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={"name": "Test Goal", "goal": 100},
+    )
+
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert result["data"]["name"] == "Test Goal"
+    assert result["data"]["goal"] == 100
+
+
+@pytest.mark.asyncio
+async def test_config_flow_goal_default_zero(hass: HomeAssistant) -> None:
+    """Test that goal defaults to 0 when not specified."""
+    result = await hass.config_entries.flow.async_init(
+        "streakhub",
+        context={"source": "user"},
+    )
+    assert result["type"] == FlowResultType.FORM
+
+    # Submit without goal
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={"name": "Test No Goal"},
+    )
+
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert result["data"]["name"] == "Test No Goal"
+    assert result["data"].get("goal", 0) == 0

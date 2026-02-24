@@ -160,3 +160,50 @@ async def test_storage_version(hass: HomeAssistant, basic_config_entry) -> None:
     store = hass.data["streakhub"]["store"]
     # Store version is set in const.py as STORAGE_VERSION = 1
     assert store.version == 1
+
+
+@pytest.mark.asyncio
+async def test_migration_adds_goal_field(
+    hass: HomeAssistant, hass_storage: dict
+) -> None:
+    """Test that old tracker data without goal field gets goal=0 added."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    # Simulate old storage data without goal field
+    hass_storage["streakhub"] = {
+        "version": 1,
+        "data": {
+            "trackers": {
+                "old_tracker": {
+                    "streak_start": "2025-01-01",
+                    "history": [],
+                    "last_event_date": None,
+                    # Note: No "goal" field - simulating old version
+                }
+            }
+        },
+    }
+
+    config_entry = MockConfigEntry(
+        domain="streakhub",
+        data={"name": "Old Tracker", "initial_date": "2025-01-01"},
+        unique_id="old_tracker",
+        title="Old Tracker",
+        version=1,
+    )
+    config_entry.add_to_hass(hass)
+
+    with freeze_time("2025-01-10 12:00:00+00:00"):
+        assert await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    # Verify goal field was added with default value 0
+    coordinator = hass.data["streakhub"][config_entry.entry_id]
+    assert coordinator.data is not None
+    assert "goal" in coordinator.data
+    assert coordinator.data["goal"] == 0
+
+    # Verify entities work correctly
+    days_to_goal_sensor = hass.states.get("sensor.old_tracker_days_to_goal")
+    assert days_to_goal_sensor is not None
+    assert days_to_goal_sensor.state == "unknown"  # goal=0 → unknown
