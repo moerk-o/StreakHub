@@ -63,6 +63,8 @@ Dieser Katalog listet alle Tests für die StreakHub Integration auf. Er dient al
 | 3.7 | `test_config_flow_date_far_future` | Abgelehnt |
 | 3.8 | `test_config_flow_duplicate_name` | Abgelehnt → "already_configured" |
 | 3.9 | `test_config_flow_unique_id_generation` | `slugify(name)` korrekt |
+| 3.10 | `test_config_flow_with_goal` | Goal-Eingabe funktioniert |
+| 3.11 | `test_config_flow_goal_default_zero` | Default = 0 |
 
 ### 3.4 Streak-Berechnung (test_streak_calculation.py)
 
@@ -135,45 +137,59 @@ Dieser Katalog listet alle Tests für die StreakHub Integration auf. Er dient al
 | 7.20 | `test_undo_on_rank_sensor` | → Fehler (nicht erlaubt) |
 | 7.21 | `test_undo_on_reset_button` | → Fehler (nicht erlaubt) |
 
-### 3.8 Storage & Persistenz (test_storage.py)
+### 3.8 Goal-Tracking (test_goal.py)
 
 | ID | Test | Beschreibung |
 |----|------|--------------|
-| 8.1 | `test_storage_empty_creates_tracker` | Neue Installation → Tracker wird angelegt |
-| 8.2 | `test_storage_persists_after_reload` | Daten bleiben erhalten |
-| 8.3 | `test_storage_multiple_trackers` | Zwei Tracker unabhängig voneinander |
-| 8.4 | `test_storage_entry_removal` | Tracker-Daten werden aus Storage entfernt |
-| 8.5 | `test_storage_version` | Version = 1 korrekt gesetzt |
+| 8.1 | `test_goal_number_entity_exists` | Number Entity erstellt |
+| 8.2 | `test_goal_number_set_value` | Wert setzen funktioniert |
+| 8.3 | `test_days_to_goal_positive` | Positive Werte korrekt |
+| 8.4 | `test_days_to_goal_zero` | Wert 0 bei Zielerreichung |
+| 8.5 | `test_days_to_goal_negative` | Negative Werte bei Überschreitung |
+| 8.6 | `test_days_to_goal_icon_changes` | Icon wechselt bei ≤0 |
+| 8.7 | `test_has_goal_binary_sensor_off` | off bei goal=0 |
+| 8.8 | `test_has_goal_binary_sensor_on` | on bei goal>0 |
 
-### 3.9 Edge Cases (test_edge_cases.py)
-
-| ID | Test | Beschreibung |
-|----|------|--------------|
-| 9.1 | `test_edge_leap_year_boundary` | Streak über 28./29. Feb hinweg |
-| 9.2 | `test_edge_year_boundary` | Streak über 31.12/01.01 hinweg |
-| 9.3 | `test_edge_very_long_streak` | 5 Jahre (1826+ Tage) korrekt |
-| 9.4 | `test_edge_empty_history` | Nur aktueller Streak, top_3 hat 1 Eintrag |
-| 9.5 | `test_edge_exactly_3_history_entries` | top_3 Verdrängungslogik |
-| 9.6 | `test_edge_current_streak_zero` | Am Event-Tag, top_3 korrekt sortiert |
-| 9.7 | `test_edge_multiple_same_day_events` | Mehrere Events am selben Tag |
-
-### 3.10 Mitternacht-Verhalten (test_midnight.py)
+### 3.9 Storage & Persistenz (test_storage.py)
 
 | ID | Test | Beschreibung |
 |----|------|--------------|
-| 10.1 | `test_midnight_streak_increments` | 23:59 → 00:01: Streak erhöht sich um 1 |
-| 10.2 | `test_midnight_timezone_berlin` | Lokale Mitternacht, nicht UTC |
-| 10.3 | `test_midnight_dst_spring` | Streak korrekt über Sommerzeitumstellung |
-| 10.4 | `test_midnight_dst_fall` | Streak korrekt über Winterzeitumstellung |
+| 9.1 | `test_storage_empty_creates_tracker` | Neue Installation → Tracker wird angelegt |
+| 9.2 | `test_storage_persists_after_reload` | Daten bleiben erhalten |
+| 9.3 | `test_storage_multiple_trackers` | Zwei Tracker unabhängig voneinander |
+| 9.4 | `test_storage_entry_removal` | Tracker-Daten werden aus Storage entfernt |
+| 9.5 | `test_storage_version` | Version = 1 korrekt gesetzt |
+| 9.6 | `test_migration_adds_goal_field` | Alte Daten bekommen goal=0 |
 
-### 3.11 Robustheit (test_robustness.py)
+### 3.10 Edge Cases (test_edge_cases.py)
 
 | ID | Test | Beschreibung |
 |----|------|--------------|
-| 11.1 | `test_robust_missing_streak_start` | `streak_start` fehlt → graceful handling |
-| 11.2 | `test_robust_invalid_date_format` | `streak_start: "invalid"` → Fehlerbehandlung |
-| 11.3 | `test_robust_missing_history` | `history` fehlt → leere Liste annehmen |
-| 11.4 | `test_robust_coordinator_no_data` | `coordinator.data is None` → Entities zeigen None |
+| 10.1 | `test_edge_leap_year_boundary` | Streak über 28./29. Feb hinweg |
+| 10.2 | `test_edge_year_boundary` | Streak über 31.12/01.01 hinweg |
+| 10.3 | `test_edge_very_long_streak` | 5 Jahre (1826+ Tage) korrekt |
+| 10.4 | `test_edge_empty_history` | Nur aktueller Streak, top_3 hat 1 Eintrag |
+| 10.5 | `test_edge_exactly_3_history_entries` | top_3 Verdrängungslogik |
+| 10.6 | `test_edge_current_streak_zero` | Am Event-Tag, top_3 korrekt sortiert |
+| 10.7 | `test_edge_multiple_same_day_events` | Mehrere Events am selben Tag |
+
+### 3.11 Mitternacht-Verhalten (test_midnight.py)
+
+| ID | Test | Beschreibung |
+|----|------|--------------|
+| 11.1 | `test_midnight_streak_increments` | 23:59 → 00:01: Streak erhöht sich um 1 |
+| 11.2 | `test_midnight_timezone_berlin` | Lokale Mitternacht, nicht UTC |
+| 11.3 | `test_midnight_dst_spring` | Streak korrekt über Sommerzeitumstellung |
+| 11.4 | `test_midnight_dst_fall` | Streak korrekt über Winterzeitumstellung |
+
+### 3.12 Robustheit (test_robustness.py)
+
+| ID | Test | Beschreibung |
+|----|------|--------------|
+| 12.1 | `test_robust_missing_streak_start` | `streak_start` fehlt → graceful handling |
+| 12.2 | `test_robust_invalid_date_format` | `streak_start: "invalid"` → Fehlerbehandlung |
+| 12.3 | `test_robust_missing_history` | `history` fehlt → leere Liste annehmen |
+| 12.4 | `test_robust_coordinator_no_data` | `coordinator.data is None` → Entities zeigen None |
 
 ---
 
@@ -183,16 +199,17 @@ Dieser Katalog listet alle Tests für die StreakHub Integration auf. Er dient al
 |-----------|--------------|
 | Setup & Translations | 5 |
 | Entity-Eigenschaften | 12 |
-| ConfigFlow | 9 |
+| ConfigFlow | 11 |
 | Streak-Berechnung | 6 |
 | Ranking-Berechnung | 10 |
 | Reset-Button | 7 |
 | Services (set_streak_start + undo) | 21 |
-| Storage & Persistenz | 5 |
+| Goal-Tracking | 8 |
+| Storage & Persistenz | 6 |
 | Edge Cases | 7 |
 | Mitternacht-Verhalten | 4 |
 | Robustheit | 4 |
-| **Gesamt** | **90 Tests** |
+| **Gesamt** | **101 Tests** |
 
 ---
 
