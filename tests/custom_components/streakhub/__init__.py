@@ -16,7 +16,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.util import slugify
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_INITIAL_DATE, CONF_NAME, DOMAIN, PLATFORMS
+from .const import CONF_GOAL, CONF_INITIAL_DATE, CONF_NAME, DOMAIN, PLATFORMS
 from .coordinator import (
     StreakHubCoordinator,
     async_get_or_create_store,
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS_LIST: list[Platform] = [Platform.SENSOR, Platform.BUTTON]
+PLATFORMS_LIST: list[Platform] = [Platform.SENSOR, Platform.BUTTON, Platform.BINARY_SENSOR]
 
 # Service constants
 SERVICE_SET_STREAK_START = "set_streak_start"
@@ -56,6 +56,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Get tracker ID and initial date from config
     tracker_id = slugify(entry.data[CONF_NAME])
     initial_date_str = entry.data.get(CONF_INITIAL_DATE)
+    goal = entry.data.get(CONF_GOAL, 0)
 
     if initial_date_str:
         initial_date = date.fromisoformat(initial_date_str)
@@ -63,7 +64,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         initial_date = dt_util.now().date()
 
     # Initialize tracker in storage if new
-    await async_initialize_tracker(hass, store, tracker_id, initial_date)
+    await async_initialize_tracker(hass, store, tracker_id, initial_date, goal)
 
     # Create coordinator
     coordinator = StreakHubCoordinator(hass, store, tracker_id, entry)

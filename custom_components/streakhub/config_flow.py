@@ -10,7 +10,7 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.helpers import selector
 from homeassistant.util import slugify
 
-from .const import CONF_INITIAL_DATE, CONF_NAME, DOMAIN
+from .const import CONF_GOAL, CONF_INITIAL_DATE, CONF_NAME, DOMAIN
 
 
 class StreakHubConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -60,6 +60,17 @@ class StreakHubConfigFlow(ConfigFlow, domain=DOMAIN):
                                     CONF_INITIAL_DATE, date.today().isoformat()
                                 ),
                             ): selector.DateSelector(),
+                            vol.Optional(
+                                CONF_GOAL, default=user_input.get(CONF_GOAL, 0)
+                            ): selector.NumberSelector(
+                                selector.NumberSelectorConfig(
+                                    min=0,
+                                    max=999,
+                                    step=1,
+                                    mode=selector.NumberSelectorMode.BOX,
+                                    unit_of_measurement="days",
+                                )
+                            ),
                         }
                     ),
                     errors=errors,
@@ -70,6 +81,7 @@ class StreakHubConfigFlow(ConfigFlow, domain=DOMAIN):
                 data={
                     CONF_NAME: user_input[CONF_NAME],
                     CONF_INITIAL_DATE: initial_date.isoformat(),
+                    CONF_GOAL: user_input.get(CONF_GOAL, 0),
                 },
             )
 
@@ -83,6 +95,15 @@ class StreakHubConfigFlow(ConfigFlow, domain=DOMAIN):
                         CONF_INITIAL_DATE,
                         default=date.today().isoformat(),
                     ): selector.DateSelector(),
+                    vol.Optional(CONF_GOAL, default=0): selector.NumberSelector(
+                        selector.NumberSelectorConfig(
+                            min=0,
+                            max=999,
+                            step=1,
+                            mode=selector.NumberSelectorMode.BOX,
+                            unit_of_measurement="days",
+                        )
+                    ),
                 }
             ),
             errors=errors,

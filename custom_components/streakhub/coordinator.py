@@ -89,7 +89,14 @@ class StreakHubCoordinator(DataUpdateCoordinator[TrackerData]):
             )
             raise KeyError(f"Tracker '{self._tracker_id}' not found in storage")
 
-        return self._storage_data["trackers"][self._tracker_id]
+        # Migration: Add goal field if missing (for existing trackers)
+        tracker_data = self._storage_data["trackers"][self._tracker_id]
+        if "goal" not in tracker_data:
+            _LOGGER.debug("Migrating tracker '%s': adding goal field", self._tracker_id)
+            tracker_data["goal"] = 0
+            await self._store.async_save(self._storage_data)
+
+        return tracker_data
 
     async def async_handle_event(self, event_day: date) -> None:
         """Process a button press / event.
@@ -241,6 +248,7 @@ async def async_initialize_tracker(
     store: Store[StorageData],
     tracker_id: str,
     initial_date: date,
+    goal: int = 0,
 ) -> None:
     """Initialize a new tracker in storage if it doesn't exist.
 
@@ -249,6 +257,7 @@ async def async_initialize_tracker(
         store: The shared storage instance.
         tracker_id: Unique identifier for the tracker.
         initial_date: Initial streak start date.
+        goal: Target days for the streak (0 = no goal).
     """
     storage_data = await store.async_load()
 
@@ -257,12 +266,13 @@ async def async_initialize_tracker(
 
     if tracker_id not in storage_data["trackers"]:
         _LOGGER.info(
-            "Initializing new tracker '%s' with start date %s",
+            "Initializing new tracker '%s' with start date %s and goal %d",
             tracker_id,
             initial_date.isoformat(),
+            goal,
         )
         storage_data["trackers"][tracker_id] = create_initial_tracker_data(
-            initial_date
+            initial_date, goal
         )
         await store.async_save(storage_data)
     else:

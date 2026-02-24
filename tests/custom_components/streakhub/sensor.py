@@ -21,8 +21,11 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     DOMAIN,
+    ENTITY_DAYS_TO_GOAL,
     ENTITY_RANK,
     ENTITY_STREAK,
+    ICON_GOAL_NOT_REACHED,
+    ICON_GOAL_REACHED,
     ICON_MEDAL,
     ICON_STREAK,
     ICON_TROPHY,
@@ -30,7 +33,13 @@ from .const import (
     UNIT_DAYS,
 )
 from .coordinator import StreakHubCoordinator
-from .logic import Top3Entry, calculate_rank, calculate_streak, calculate_top_3
+from .logic import (
+    Top3Entry,
+    calculate_days_to_goal,
+    calculate_rank,
+    calculate_streak,
+    calculate_top_3,
+)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -88,6 +97,30 @@ def _get_rank_icon(coordinator: StreakHubCoordinator, today: date) -> str:
     return ICON_MEDAL
 
 
+def _get_days_to_goal_value(coordinator: StreakHubCoordinator, today: date) -> int | None:
+    """Calculate days remaining to goal."""
+    goal = coordinator.data.get("goal", 0)
+    if goal == 0:
+        return None
+    current_streak = _get_streak_value(coordinator, today)
+    return calculate_days_to_goal(current_streak, goal)
+
+
+def _get_days_to_goal_icon(coordinator: StreakHubCoordinator, today: date) -> str:
+    """Get days-to-goal icon based on goal status."""
+    days_to_goal = _get_days_to_goal_value(coordinator, today)
+    if days_to_goal is None or days_to_goal > 0:
+        return ICON_GOAL_NOT_REACHED
+    return ICON_GOAL_REACHED
+
+
+def _get_days_to_goal_attributes(
+    coordinator: StreakHubCoordinator, today: date
+) -> dict[str, Any]:
+    """Get days-to-goal sensor attributes."""
+    return {"goal": coordinator.data.get("goal", 0)}
+
+
 SENSOR_DESCRIPTIONS: tuple[StreakHubSensorEntityDescription, ...] = (
     StreakHubSensorEntityDescription(
         key=ENTITY_STREAK,
@@ -105,6 +138,15 @@ SENSOR_DESCRIPTIONS: tuple[StreakHubSensorEntityDescription, ...] = (
         value_fn=_get_rank_value,
         extra_state_attributes_fn=_get_rank_attributes,
         icon_fn=_get_rank_icon,
+    ),
+    StreakHubSensorEntityDescription(
+        key=ENTITY_DAYS_TO_GOAL,
+        translation_key=ENTITY_DAYS_TO_GOAL,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UNIT_DAYS,
+        icon_fn=_get_days_to_goal_icon,
+        value_fn=_get_days_to_goal_value,
+        extra_state_attributes_fn=_get_days_to_goal_attributes,
     ),
 )
 
