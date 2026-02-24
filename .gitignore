@@ -84,3 +84,12 @@ Thumbs.db
 # Guide symlinks (point to central versions)
 TESTING_GUIDE.md
 RELEASE_GUIDE.md
+
+# Work files / notes
+konzept.md
+GOAL_TRACKING_KONZEPT.md
+MIGRATION.md
+FAILED_TESTS.md
+prompt.md
+promt.md
+*.draft.md
