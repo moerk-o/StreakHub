@@ -46,7 +46,7 @@
     },
     "undo_last_event": {
       "name": "Undo Last Event",
-      "description": "Undoes the last button press or set_streak_start, restoring the previous streak."
+      "description": "Restores the previous streak (for accidental button presses or corrections)."
     }
   },
   "exceptions": {
