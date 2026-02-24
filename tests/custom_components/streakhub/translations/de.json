@@ -46,7 +46,7 @@
     },
     "undo_last_event": {
       "name": "Letztes Ereignis rückgängig machen",
-      "description": "Macht den letzten Button-Druck oder set_streak_start rückgängig und stellt den vorherigen Streak wieder her."
+      "description": "Stellt den vorherigen Streak wieder her (für versehentliche Button-Drücke oder Korrekturen)."
     }
   },
   "exceptions": {
