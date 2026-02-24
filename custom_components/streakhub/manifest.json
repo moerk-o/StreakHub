@@ -1,11 +1,12 @@
 {
   "domain": "streakhub",
   "name": "StreakHub",
-  "version": "1.2.0",
   "codeowners": [],
   "config_flow": true,
-  "documentation": "https://github.com/your-username/streakhub",
+  "documentation": "https://github.com/moerk-o/StreakHub",
   "integration_type": "service",
   "iot_class": "calculated",
-  "requirements": []
+  "issue_tracker": "https://github.com/moerk-o/StreakHub/issues",
+  "requirements": [],
+  "version": "1.2.0"
 }
