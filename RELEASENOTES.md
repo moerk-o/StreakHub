@@ -1,3 +1,20 @@
+### ✨ New Features
+- **Goal-Tracking**: Set streak goals and track progress with new entities
+  - Number entity to set and adjust your goal
+  - Days-to-Goal sensor shows days remaining (positive), reached (0), or exceeded (negative)
+  - Has-Goal binary sensor for conditional dashboard cards
+  - Full backward compatibility - existing trackers automatically migrate
+
+### 🔧 Infrastructure
+- Automatic migration for existing trackers (adds goal=0)
+- Adds HACS Compatibility
+
+**Full Changelog**: https://github.com/moerk-o/StreakHub/compare/v1.1.1...v1.2.0
+
+---
+
+# v1.1.1
+
 ### 🐞 Bug Fixes
 - **Translations**: Improved consistency of `undo_last_event` service description across languages ([#v1.1.1](https://github.com/moerk-o/StreakHub/commit/56822f2))
 

@@ -14,8 +14,9 @@ Features:
 
 - Unlimited independent trackers
 - Current streak in days
+- Goal tracking with progress monitoring
 - Ranking of current streak (Top 3 or not)
-- Historical Top 3 with gamification aspect
+- Historical Top 3 
 - Retroactive correction of streak start
 
 ## Installation
@@ -48,13 +49,14 @@ StreakHub is configured entirely through the UI (no YAML configuration).
 2. Search for "StreakHub"
 3. Enter a name for your tracker (e.g., "Sugar", "Cigarettes", "Workout")
 4. Optionally set an initial start date (defaults to today)
-5. Click Submit
+5. Optionally set a streak goal in days (0 = no goal)
+6. Click Submit
 
 Each tracker creates its own device with associated entities.
 
 ## Entities
 
-Each tracker creates 3 entities:
+Each tracker creates 6 entities:
 
 ### Streak Sensor (`sensor.{name}_streak`)
 
@@ -65,7 +67,6 @@ Shows the number of days since the last event.
 | State | Number of days (integer) |
 | State Class | `measurement` |
 | Unit | `d` (days) |
-| Icon | `mdi:counter` |
 
 **Attributes:**
 - `streak_start`: First day of the current streak (ISO 8601 date)
@@ -81,12 +82,6 @@ Shows the ranking of the current streak in the all-time Top 3.
 | Property | Value |
 |----------|-------|
 | State | 1, 2, 3 (if in Top 3) or 0 (not in Top 3) |
-| Icon | Dynamic based on rank |
-
-**Icons:**
-- Rank 1: `mdi:trophy` (Record!)
-- Rank 2-3: `mdi:medal-outline`
-- Not in Top 3: `mdi:trophy-outline`
 
 **Attributes:**
 - `top_3`: List of the three longest streaks
@@ -112,15 +107,59 @@ top_3:
 
 Button to end the current streak.
 
-| Property | Value |
-|----------|-------|
-| Icon | `mdi:restart` |
-
 **Behavior:**
 Pressing means "the event happened today":
 - Current streak ends (yesterday was the last day without the event)
 - New streak starts tomorrow
 - Streak sensor shows `0` today
+
+### Goal Number (`number.{name}_goal`)
+
+Editable number entity to set and adjust your streak goal.
+
+| Property | Value |
+|----------|-------|
+| State | Goal in days (0-999) |
+| Unit | `d` (days) |
+
+**Behavior:**
+- Set to `0` for no goal (default)
+- Set to any value 1-999 to define your target streak length
+- Can be changed at any time without affecting current streak
+
+### Days-to-Goal Sensor (`sensor.{name}_days_to_goal`)
+
+Shows how many days remain until your goal is reached, or how many days you've exceeded it.
+
+| Property | Value |
+|----------|-------|
+| State | Days remaining (integer) or `unknown` |
+| State Class | `measurement` |
+| Unit | `d` (days) |
+
+**Attributes:**
+- `goal`: The configured goal value
+- `goal_date`: Expected date of goal achievement (only if goal > 0 and not yet reached)
+
+**Values:**
+- Positive (e.g., `30`): 30 days remaining until goal
+- `0`: Goal reached today
+- Negative (e.g., `-10`): Goal exceeded by 10 days
+- `unknown`: No goal set (goal = 0)
+
+### Has-Goal Binary Sensor (`binary_sensor.{name}_has_goal`)
+
+Diagnostic sensor indicating whether a goal is currently set.
+
+| Property | Value |
+|----------|-------|
+| State | `on` (goal set) or `off` (no goal) |
+| Entity Category | `diagnostic` |
+
+**Use Cases:**
+- Show/hide goal-related dashboard cards conditionally
+- Trigger automations when goal is set or cleared
+- Display different UI elements based on goal status
 
 ## Services
 
@@ -236,3 +275,11 @@ Ensure:
 ## License
 
 This project is licensed under the MIT License.
+
+## Acknowledgments
+
+- Development assisted by [Claude](https://claude.ai/) (Anthropic)
+
+---
+
+⭐ **Like StreakHub?** Instead of buying me a coffee, give the project a star on GitHub!

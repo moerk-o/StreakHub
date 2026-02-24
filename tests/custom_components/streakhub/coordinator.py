@@ -297,6 +297,12 @@ async def async_initialize_tracker(
         await store.async_save(storage_data)
     else:
         _LOGGER.debug("Tracker '%s' already exists in storage", tracker_id)
+        # Migration: Add goal field if missing (for trackers created before v1.2.0)
+        tracker_data = storage_data["trackers"][tracker_id]
+        if "goal" not in tracker_data:
+            _LOGGER.info("Migrating tracker '%s': adding goal field", tracker_id)
+            tracker_data["goal"] = 0
+            await store.async_save(storage_data)
 
 
 async def async_remove_tracker(
