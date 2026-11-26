@@ -62,7 +62,7 @@ async def test_service_history_correct(
         await hass.async_block_till_done()
 
         # Check history
-        coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
+        coordinator = basic_config_entry.runtime_data
         history = coordinator.data.get("history", [])
         assert len(history) == 1
         # Per konzept.md: set_streak_start(2025-01-08) means event was Jan 7
@@ -382,7 +382,7 @@ async def test_service_zero_day_old_streak(
         # event_day = new_start - 1 = Jan 1
         # old_streak_end = event_day - 1 = Dec 31
         # old_streak_days = (Dec 31 - Jan 1).days + 1 = 0 Tage → nicht gespeichert
-        coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
+        coordinator = basic_config_entry.runtime_data
         history = coordinator.data.get("history", [])
         assert len(history) == 0
 
@@ -437,7 +437,7 @@ async def test_undo_after_button_press(
         assert streak_sensor.attributes.get("streak_start") == "2025-01-01"
 
         # History should be empty again
-        coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
+        coordinator = basic_config_entry.runtime_data
         assert len(coordinator.data.get("history", [])) == 0
 
 
@@ -571,7 +571,7 @@ async def test_undo_with_existing_history(
         await hass.async_block_till_done()
 
         # Verify initial state
-        coordinator = hass.data["streakhub"][config_entry_with_history.entry_id]
+        coordinator = config_entry_with_history.runtime_data
         assert len(coordinator.data.get("history", [])) == 2
 
         # Undo the last event
@@ -588,7 +588,7 @@ async def test_undo_with_existing_history(
         assert streak_sensor.attributes.get("streak_start") == "2025-01-01"
 
         # History should have only 1 entry now (the old one)
-        coordinator = hass.data["streakhub"][config_entry_with_history.entry_id]
+        coordinator = config_entry_with_history.runtime_data
         history = coordinator.data.get("history", [])
         assert len(history) == 1
         assert history[0]["start"] == "2024-11-01"

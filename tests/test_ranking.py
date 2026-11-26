@@ -48,7 +48,7 @@ async def test_rank_current_is_record(
     # new streak starts Jan 11
     with freeze_time("2025-01-20 12:00:00+00:00"):
         # Force a refresh - new streak is 10 days (Jan 11 to Jan 20)
-        coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
+        coordinator = basic_config_entry.runtime_data
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 

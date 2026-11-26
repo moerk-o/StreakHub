@@ -141,7 +141,7 @@ async def test_edge_exactly_3_history_entries(
 
     # Day 2: Jan 15 (streak: Jan 11-15 = 5 days)
     with freeze_time("2025-01-15 12:00:00+00:00"):
-        coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
+        coordinator = basic_config_entry.runtime_data
         await coordinator.async_refresh()
 
         await hass.services.async_call(
@@ -153,7 +153,7 @@ async def test_edge_exactly_3_history_entries(
 
     # Day 3: Jan 20 (streak: Jan 16-20 = 5 days)
     with freeze_time("2025-01-20 12:00:00+00:00"):
-        coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
+        coordinator = basic_config_entry.runtime_data
         await coordinator.async_refresh()
 
         await hass.services.async_call(
@@ -164,7 +164,7 @@ async def test_edge_exactly_3_history_entries(
         await hass.async_block_till_done()
 
     # Now we have 3 history entries: 10, 5, 5 days
-    coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
+    coordinator = basic_config_entry.runtime_data
     history = coordinator.data.get("history", [])
     assert len(history) == 3
 

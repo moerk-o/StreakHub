@@ -70,9 +70,6 @@
     "date_before_streak_start": {
       "message": "The date must be after the current streak start ({streak_start})."
     },
-    "invalid_date_format": {
-      "message": "Invalid date format."
-    },
     "undo_not_possible": {
       "message": "Undo not possible. No recent event to undo or history is empty."
     }

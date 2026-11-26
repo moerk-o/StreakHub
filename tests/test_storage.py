@@ -4,6 +4,8 @@ import pytest
 from freezegun import freeze_time
 from homeassistant.core import HomeAssistant
 
+from custom_components.streakhub.coordinator import DATA_STORE
+
 
 @pytest.mark.asyncio
 async def test_storage_empty_creates_tracker(
@@ -17,7 +19,7 @@ async def test_storage_empty_creates_tracker(
         await hass.async_block_till_done()
 
     # Verify coordinator has data
-    coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
+    coordinator = basic_config_entry.runtime_data
     assert coordinator.data is not None
     assert "streak_start" in coordinator.data
     assert "history" in coordinator.data
@@ -43,7 +45,7 @@ async def test_storage_persists_after_reload(
         await hass.async_block_till_done()
 
         # Get data before unload
-        coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
+        coordinator = basic_config_entry.runtime_data
         history_before = coordinator.data.get("history", [])
         assert len(history_before) == 1
 
@@ -56,7 +58,7 @@ async def test_storage_persists_after_reload(
         await hass.async_block_till_done()
 
         # Data should still be there
-        coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
+        coordinator = basic_config_entry.runtime_data
         history_after = coordinator.data.get("history", [])
         assert len(history_after) == 1
         # Per konzept.md: Button press on Jan 10 saves streak Jan 1-9 = 9 days
@@ -133,7 +135,7 @@ async def test_storage_entry_removal(
         await hass.async_block_till_done()
 
     # Get the store
-    store = hass.data["streakhub"]["store"]
+    store = hass.data[DATA_STORE]
     storage_data = await store.async_load()
     assert "zucker" in storage_data["trackers"]
 
@@ -156,7 +158,7 @@ async def test_storage_version(hass: HomeAssistant, basic_config_entry) -> None:
         await hass.async_block_till_done()
 
     # Get the store and verify version
-    store = hass.data["streakhub"]["store"]
+    store = hass.data[DATA_STORE]
     # Store version is set in const.py as STORAGE_VERSION = 1
     assert store.version == 1
 
@@ -197,7 +199,7 @@ async def test_migration_adds_goal_field(
         await hass.async_block_till_done()
 
     # Verify goal field was added with default value 0
-    coordinator = hass.data["streakhub"][config_entry.entry_id]
+    coordinator = config_entry.runtime_data
     assert coordinator.data is not None
     assert "goal" in coordinator.data
     assert coordinator.data["goal"] == 0

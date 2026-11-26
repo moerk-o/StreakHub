@@ -1,6 +1,6 @@
 {
   "name": "StreakHub",
-  "homeassistant": "2024.4.0",
+  "homeassistant": "2025.3.0",
   "zip_release": true,
   "filename": "streakhub.zip",
   "render_readme": true
