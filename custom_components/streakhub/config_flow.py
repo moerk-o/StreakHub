@@ -36,11 +36,9 @@ class StreakHubConfigFlow(ConfigFlow, domain=DOMAIN):
             await self.async_set_unique_id(unique_id)
             self._abort_if_unique_id_configured()
 
-            # Normalize initial_date to ISO string if provided
-            initial_date = user_input.get(CONF_INITIAL_DATE)
-            if initial_date is None:
-                initial_date = date.today()
-            elif isinstance(initial_date, str):
+            # The form always provides a date (default: today)
+            initial_date = user_input[CONF_INITIAL_DATE]
+            if isinstance(initial_date, str):
                 initial_date = date.fromisoformat(initial_date)
 
             # Validate: date must not be in the future (> tomorrow)

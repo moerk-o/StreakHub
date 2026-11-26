@@ -50,9 +50,7 @@ class StreakHubSensorEntityDescription(SensorEntityDescription):
     """Describes a StreakHub sensor entity."""
 
     value_fn: Callable[[StreakHubCoordinator, date], Any]
-    extra_state_attributes_fn: (
-        Callable[[StreakHubCoordinator, date], dict[str, Any]] | None
-    ) = None
+    extra_state_attributes_fn: Callable[[StreakHubCoordinator, date], dict[str, Any]]
     icon_fn: Callable[[StreakHubCoordinator, date], str] | None = None
 
 
@@ -242,8 +240,6 @@ class StreakHubSensor(CoordinatorEntity[StreakHubCoordinator], SensorEntity):
     def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return additional state attributes."""
         if self.coordinator.data is None:
-            return None
-        if self.entity_description.extra_state_attributes_fn is None:
             return None
         return self.entity_description.extra_state_attributes_fn(
             self.coordinator, self._get_today()
