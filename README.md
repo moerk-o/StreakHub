@@ -21,7 +21,7 @@ Features:
 
 ## Installation
 
-Requires Home Assistant 2024.4 or newer.
+Requires Home Assistant 2025.3 or newer.
 
 StreakHub is not listed in the default catalog yet, so add it via its repository link.
 

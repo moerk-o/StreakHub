@@ -74,7 +74,7 @@ async def test_robust_missing_history(
         await hass.async_block_till_done()
 
     # Get coordinator and verify history exists as empty list
-    coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
+    coordinator = basic_config_entry.runtime_data
     history = coordinator.data.get("history", None)
     assert history is not None
     assert isinstance(history, list)
@@ -100,7 +100,7 @@ async def test_robust_coordinator_no_data(
         # This is tricky to test without modifying production code
         # We verify that the sensor code handles None data by checking
         # that the sensor implementation includes None checks
-        coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
+        coordinator = basic_config_entry.runtime_data
 
         # Store original data
         original_data = coordinator.data

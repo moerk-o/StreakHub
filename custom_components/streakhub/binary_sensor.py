@@ -9,15 +9,19 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import (
+    AddConfigEntryEntitiesCallback,  # Needs Home Assistant 2025.3 (see hacs.json)
+)
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN, ENTITY_HAS_GOAL, ICON_HAS_GOAL
-from .coordinator import StreakHubCoordinator
+from .coordinator import StreakHubConfigEntry, StreakHubCoordinator
+
+# Entities only read from or write to the coordinator, no device I/O
+PARALLEL_UPDATES = 0
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -46,8 +50,8 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[StreakHubBinarySensorEntityDescription, ...] =
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    entry: StreakHubConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up StreakHub binary sensor entities.
 
@@ -56,7 +60,7 @@ async def async_setup_entry(
         entry: Config entry.
         async_add_entities: Callback to add entities.
     """
-    coordinator: StreakHubCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator = entry.runtime_data
 
     async_add_entities(
         StreakHubBinarySensor(coordinator, description, entry)
@@ -76,7 +80,7 @@ class StreakHubBinarySensor(
         self,
         coordinator: StreakHubCoordinator,
         description: StreakHubBinarySensorEntityDescription,
-        entry: ConfigEntry,
+        entry: StreakHubConfigEntry,
     ) -> None:
         """Initialize the binary sensor.
 

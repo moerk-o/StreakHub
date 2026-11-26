@@ -23,7 +23,7 @@ async def test_midnight_streak_increments(
 
     # After midnight (00:01 on Jan 11)
     with freeze_time("2025-01-11 00:01:00+00:00"):
-        coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
+        coordinator = basic_config_entry.runtime_data
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
@@ -50,7 +50,7 @@ async def test_midnight_timezone_berlin(
 
     # At 00:30 CET (23:30 UTC on Jan 10)
     with freeze_time("2025-01-11 00:30:00+00:00"):
-        coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
+        coordinator = basic_config_entry.runtime_data
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
@@ -91,7 +91,7 @@ async def test_midnight_dst_spring(hass: HomeAssistant, basic_config_entry) -> N
 
     # March 31 (UTC) - after DST change in local timezones
     with freeze_time("2025-03-31 12:00:00+00:00"):
-        coordinator = hass.data["streakhub"][entry.entry_id]
+        coordinator = entry.runtime_data
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
@@ -132,7 +132,7 @@ async def test_midnight_dst_fall(hass: HomeAssistant, basic_config_entry) -> Non
 
     # October 27 (UTC) - after DST change in local timezones
     with freeze_time("2025-10-27 12:00:00+00:00"):
-        coordinator = hass.data["streakhub"][entry.entry_id]
+        coordinator = entry.runtime_data
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
