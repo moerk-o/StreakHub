@@ -222,7 +222,7 @@ class StreakHubSensor(CoordinatorEntity[StreakHubCoordinator], SensorEntity):
             identifiers={(DOMAIN, self._entry.entry_id)},
             name=self._entry.title,
             manufacturer="StreakHub",
-            sw_version="1.0.0",
+            sw_version=self.coordinator.sw_version,
         )
 
     def _get_today(self) -> date:

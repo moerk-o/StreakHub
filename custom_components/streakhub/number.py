@@ -98,7 +98,7 @@ class StreakHubNumber(CoordinatorEntity[StreakHubCoordinator], NumberEntity):
             identifiers={(DOMAIN, self._entry.entry_id)},
             name=self._entry.title,
             manufacturer="StreakHub",
-            sw_version="1.0.0",
+            sw_version=self.coordinator.sw_version,
         )
 
     @property

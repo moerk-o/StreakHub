@@ -12,6 +12,7 @@ from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.typing import ConfigType
+from homeassistant.loader import async_get_integration
 from homeassistant.util import dt as dt_util
 from homeassistant.util import slugify
 
@@ -78,7 +79,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: StreakHubConfigEntry) ->
     await async_initialize_tracker(hass, store, tracker_id, initial_date, goal)
 
     # Create coordinator and load initial data
-    coordinator = StreakHubCoordinator(hass, store, tracker_id, entry)
+    integration = await async_get_integration(hass, DOMAIN)
+    coordinator = StreakHubCoordinator(
+        hass, store, tracker_id, entry, str(integration.version)
+    )
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
 
