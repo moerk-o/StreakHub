@@ -1,4 +1,4 @@
-"""Test goal-tracking features (Number entity, Days-to-Goal sensor, Has-Goal binary sensor)."""
+"""Test goal tracking: goal number, days-to-goal sensor, has-goal binary sensor."""
 
 from datetime import date
 
@@ -190,7 +190,9 @@ async def test_days_to_goal_icon_changes(
 
         days_to_goal_sensor = hass.states.get("sensor.test_goal_days_to_goal")
         assert days_to_goal_sensor is not None
-        assert days_to_goal_sensor.attributes.get("icon") == "mdi:check-decagram-outline"
+        assert (
+            days_to_goal_sensor.attributes.get("icon") == "mdi:check-decagram-outline"
+        )
 
     # Reload at goal reached: icon should be solid
     await hass.config_entries.async_unload(config_entry.entry_id)

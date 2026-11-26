@@ -29,7 +29,6 @@ from .const import (
     ICON_MEDAL,
     ICON_STREAK,
     ICON_TROPHY,
-    ICON_TROPHY_OUTLINE,
     UNIT_DAYS,
 )
 from .coordinator import StreakHubCoordinator
@@ -47,7 +46,9 @@ class StreakHubSensorEntityDescription(SensorEntityDescription):
     """Describes a StreakHub sensor entity."""
 
     value_fn: Callable[[StreakHubCoordinator, date], Any]
-    extra_state_attributes_fn: Callable[[StreakHubCoordinator, date], dict[str, Any]] | None = None
+    extra_state_attributes_fn: (
+        Callable[[StreakHubCoordinator, date], dict[str, Any]] | None
+    ) = None
     icon_fn: Callable[[StreakHubCoordinator, date], str] | None = None
 
 
@@ -62,7 +63,9 @@ def _get_streak_value(coordinator: StreakHubCoordinator, today: date) -> int:
     return calculate_streak(streak_start, today)
 
 
-def _get_streak_attributes(coordinator: StreakHubCoordinator, today: date) -> dict[str, Any]:
+def _get_streak_attributes(
+    coordinator: StreakHubCoordinator, today: date
+) -> dict[str, Any]:
     """Get streak sensor attributes."""
     return {
         "streak_start": coordinator.data["streak_start"],
@@ -82,7 +85,9 @@ def _get_rank_value(coordinator: StreakHubCoordinator, today: date) -> int:
     return calculate_rank(top_3)
 
 
-def _get_rank_attributes(coordinator: StreakHubCoordinator, today: date) -> dict[str, Any]:
+def _get_rank_attributes(
+    coordinator: StreakHubCoordinator, today: date
+) -> dict[str, Any]:
     """Get rank sensor attributes."""
     return {
         "top_3": _get_top_3(coordinator, today),
@@ -97,7 +102,9 @@ def _get_rank_icon(coordinator: StreakHubCoordinator, today: date) -> str:
     return ICON_MEDAL
 
 
-def _get_days_to_goal_value(coordinator: StreakHubCoordinator, today: date) -> int | None:
+def _get_days_to_goal_value(
+    coordinator: StreakHubCoordinator, today: date
+) -> int | None:
     """Calculate days remaining to goal."""
     goal = coordinator.data.get("goal", 0)
     if goal == 0:

@@ -365,7 +365,8 @@ async def test_service_zero_day_old_streak(
         await hass.async_block_till_done()
 
         # On start day (Jan 1), streak is 1 day
-        # If we set new start to Jan 2, old streak is Jan 1 only = 1 day (should be saved)
+        # If we set new start to Jan 2, old streak is Jan 1 only = 1 day
+        # (should be saved)
         await hass.services.async_call(
             "streakhub",
             "set_streak_start",

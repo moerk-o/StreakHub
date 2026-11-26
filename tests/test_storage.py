@@ -2,7 +2,6 @@
 
 import pytest
 from freezegun import freeze_time
-from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 
 

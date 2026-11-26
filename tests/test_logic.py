@@ -6,8 +6,6 @@ dependencies. All functions are deterministic and take `today` as a parameter.
 
 from datetime import date
 
-import pytest
-
 from custom_components.streakhub.logic import (
     HistoryEntry,
     Top3Entry,

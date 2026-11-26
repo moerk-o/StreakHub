@@ -56,7 +56,8 @@ async def test_entity_ids_follow_pattern(
         assert await hass.config_entries.async_setup(basic_config_entry.entry_id)
         await hass.async_block_till_done()
 
-    # Entity IDs should be: sensor.{name}_streak, sensor.{name}_rank, button.{name}_reset
+    # Entity IDs should be: sensor.{name}_streak, sensor.{name}_rank,
+    # button.{name}_reset
     assert hass.states.get("sensor.zucker_streak") is not None
     assert hass.states.get("sensor.zucker_rank") is not None
     assert hass.states.get("button.zucker_reset") is not None

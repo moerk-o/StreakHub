@@ -32,7 +32,9 @@ async def test_edge_year_boundary(
 
     # Start on Dec 30, 2024
     with freeze_time("2025-01-03 12:00:00+00:00"):
-        assert await hass.config_entries.async_setup(config_entry_year_boundary.entry_id)
+        assert await hass.config_entries.async_setup(
+            config_entry_year_boundary.entry_id
+        )
         await hass.async_block_till_done()
 
     streak_sensor = hass.states.get("sensor.jahreswechsel_streak")

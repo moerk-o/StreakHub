@@ -227,6 +227,7 @@ async def test_button_press_consecutive_days(
         # Per konzept.md:
         # - First press on Jan 10: old_streak = Jan 1-9 = 9 days (saved)
         # - Second press on Jan 11: streak_start = Jan 11, event_day = Jan 11
-        #   old_streak_end = Jan 10, old_streak_days = (10.1. - 11.1.).days + 1 = 0 (not saved)
+        #   old_streak_end = Jan 10,
+        #   old_streak_days = (10.1. - 11.1.).days + 1 = 0 (not saved)
         assert len(history) == 1
         assert history[0]["days"] == 9
