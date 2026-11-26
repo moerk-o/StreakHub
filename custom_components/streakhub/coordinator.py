@@ -48,6 +48,7 @@ class StreakHubCoordinator(DataUpdateCoordinator[TrackerData]):
         store: Store[StorageData],
         tracker_id: str,
         entry: StreakHubConfigEntry,
+        sw_version: str,
     ) -> None:
         """Initialize the coordinator.
 
@@ -56,6 +57,7 @@ class StreakHubCoordinator(DataUpdateCoordinator[TrackerData]):
             store: Shared storage instance for all trackers.
             tracker_id: Unique identifier for this tracker (slugified name).
             entry: Config entry for this tracker.
+            sw_version: Integration version, shown on the tracker device.
         """
         super().__init__(
             hass,
@@ -67,6 +69,7 @@ class StreakHubCoordinator(DataUpdateCoordinator[TrackerData]):
         self._store = store
         self._tracker_id = tracker_id
         self._storage_data: StorageData | None = None
+        self.sw_version = sw_version
 
     @property
     def tracker_id(self) -> str:

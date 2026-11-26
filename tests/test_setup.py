@@ -1,11 +1,20 @@
 """Test StreakHub integration setup and entity creation."""
 
+import json
+from pathlib import Path
+
 import pytest
 from freezegun import freeze_time
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
+
+MANIFEST_PATH = (
+    Path(__file__).parent.parent / "custom_components" / "streakhub" / "manifest.json"
+)
+MANIFEST_VERSION = json.loads(MANIFEST_PATH.read_text())["version"]
 
 
 @pytest.mark.asyncio
@@ -133,3 +142,21 @@ async def test_setup_without_initial_date_starts_today(
         assert streak_sensor is not None
         assert int(streak_sensor.state) == 1
         assert streak_sensor.attributes["streak_start"] == "2025-01-10"
+
+
+@pytest.mark.asyncio
+async def test_device_reports_integration_version(
+    hass: HomeAssistant, basic_config_entry
+) -> None:
+    """Test that the tracker device shows the version from the manifest."""
+    basic_config_entry.add_to_hass(hass)
+
+    with freeze_time("2025-01-10 12:00:00+00:00"):
+        assert await hass.config_entries.async_setup(basic_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    devices = dr.async_entries_for_config_entry(
+        dr.async_get(hass), basic_config_entry.entry_id
+    )
+    assert len(devices) == 1
+    assert devices[0].sw_version == MANIFEST_VERSION

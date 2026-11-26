@@ -243,3 +243,46 @@ async def test_config_flow_goal_default_zero(hass: HomeAssistant) -> None:
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert result["data"]["name"] == "Test No Goal"
     assert result["data"].get("goal", 0) == 0
+
+
+@pytest.mark.asyncio
+async def test_config_flow_default_date_uses_local_day(hass: HomeAssistant) -> None:
+    """Test that the default start date is today in the Home Assistant time zone."""
+    await hass.config.async_set_time_zone("Europe/Berlin")
+
+    # 23:30 UTC is already 00:30 on the next day in Berlin
+    with freeze_time("2025-01-15 23:30:00+00:00"):
+        result = await hass.config_entries.flow.async_init(
+            "streakhub",
+            context={"source": "user"},
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input={"name": "Late Tracker"},
+        )
+
+        assert result["type"] == FlowResultType.CREATE_ENTRY
+        assert result["data"]["initial_date"] == "2025-01-16"
+
+
+@pytest.mark.asyncio
+async def test_config_flow_tomorrow_uses_local_day(hass: HomeAssistant) -> None:
+    """Test that 'tomorrow' is counted from the Home Assistant time zone."""
+    await hass.config.async_set_time_zone("Europe/Berlin")
+
+    # In Berlin it is already Jan 16, so Jan 17 is tomorrow and allowed
+    with freeze_time("2025-01-15 23:30:00+00:00"):
+        result = await hass.config_entries.flow.async_init(
+            "streakhub",
+            context={"source": "user"},
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input={
+                "name": "Late Tomorrow Tracker",
+                "initial_date": date(2025, 1, 17),
+            },
+        )
+
+        assert result["type"] == FlowResultType.CREATE_ENTRY
+        assert result["data"]["initial_date"] == "2025-01-17"
