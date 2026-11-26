@@ -21,23 +21,35 @@ Features:
 
 ## Installation
 
-### Manual Installation
+Requires Home Assistant 2024.4 or newer.
 
-1. Copy the `custom_components/streakhub` folder to your Home Assistant's `custom_components` directory
-2. Restart Home Assistant
-3. Go to **Settings** → **Devices & Services** → **Add Integration**
-4. Search for "StreakHub" and follow the setup wizard
+StreakHub is not listed in the default catalog yet, so add it via its repository link.
 
-### HACS (Custom Repository)
+### Marketplace (Home Assistant 2026.11 and newer)
 
-This integration is not yet available in the default HACS repository. To install via HACS:
+1. Go to **Settings** → **Marketplace** → **Add from link**
+2. Enter `moerk-o/StreakHub` and select **Add**
+3. Open the repository page and select **Install**, then restart Home Assistant when the Marketplace asks for it
+4. Go to **Settings** → **Devices & Services** → **Add Integration**
+5. Search for "StreakHub" and follow the setup wizard
+
+### HACS (Home Assistant 2026.10 and older)
 
 1. Open HACS in your Home Assistant
 2. Click the three dots in the top right corner
 3. Select "Custom repositories"
-4. Add the repository URL and select "Integration" as category
+4. Add `https://github.com/moerk-o/StreakHub` and select "Integration" as category
 5. Install "StreakHub"
 6. Restart Home Assistant
+7. Go to **Settings** → **Devices & Services** → **Add Integration** and search for "StreakHub"
+
+### Manual
+
+1. Download `streakhub.zip` from the latest [GitHub release](https://github.com/moerk-o/StreakHub/releases)
+2. Unpack it into `config/custom_components/streakhub` in your Home Assistant configuration
+3. Restart Home Assistant
+4. Go to **Settings** → **Devices & Services** → **Add Integration**
+5. Search for "StreakHub" and follow the setup wizard
 
 ## Configuration
 
@@ -274,7 +286,7 @@ Ensure:
 
 ## License
 
-This project is licensed under the MIT License.
+MIT — see [LICENSE](LICENSE).
 
 ## Acknowledgments
 
