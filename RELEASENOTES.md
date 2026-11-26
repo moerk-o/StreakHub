@@ -1,3 +1,20 @@
+### 🐞 Bug Fixes
+- **Device version**: Tracker devices now show the installed StreakHub version instead of a fixed 1.0.0
+- **Start date around midnight**: The setup dialog now takes "today" from the Home Assistant time zone. Before, the default start date and the "tomorrow" limit could be off by one day when the system clock used a different time zone
+
+### 🔧 Infrastructure
+- **Requires Home Assistant 2025.3 or newer**: StreakHub now uses current Home Assistant APIs. The Marketplace and HACS offer this update only on supported versions
+- Tests now run on the official `pytest-homeassistant` package with Python 3.14 and cover 100% of the code
+
+### 📝 Documentation
+- README describes installation via the Marketplace (Home Assistant 2026.11 and newer) and HACS
+
+**Full Changelog**: https://github.com/moerk-o/StreakHub/compare/v1.2.0...v1.2.1
+
+---
+
+# v1.2.0
+
 ### ✨ New Features
 - **Goal-Tracking**: Set streak goals and track progress with new entities
   - Number entity to set and adjust your goal
