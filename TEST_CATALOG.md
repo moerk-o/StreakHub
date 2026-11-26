@@ -1,7 +1,7 @@
 # Test-Katalog: StreakHub Integration
 
-**Version:** 1.1.0
-**Stand:** Februar 2026
+**Version:** 1.2.0
+**Stand:** November 2026
 
 ---
 
@@ -32,6 +32,7 @@ Dieser Katalog listet alle Tests für die StreakHub Integration auf. Er dient al
 | 1.3 | `test_entity_ids_follow_pattern` | `sensor.{name}_streak`, `sensor.{name}_rank`, etc. |
 | 1.4 | `test_config_entry_unload` | Integration kann entladen werden |
 | 1.5 | `test_config_entry_remove_cleans_up_entities` | Entities werden beim Entfernen gelöscht |
+| 1.6 | `test_setup_without_initial_date_starts_today` | Ohne Startdatum beginnt der Streak heute |
 
 ### 3.2 Entity-Eigenschaften (test_entities.py)
 
@@ -137,6 +138,13 @@ Dieser Katalog listet alle Tests für die StreakHub Integration auf. Er dient al
 | 7.20 | `test_undo_on_rank_sensor` | → Fehler (nicht erlaubt) |
 | 7.21 | `test_undo_on_reset_button` | → Fehler (nicht erlaubt) |
 
+**Beide Services**
+
+| ID | Test | Beschreibung |
+|----|------|--------------|
+| 7.22 | `test_service_on_entity_of_other_integration` | Entity einer anderen Integration wird übersprungen |
+| 7.23 | `test_service_on_unloaded_tracker` | Entity eines entladenen Trackers wird übersprungen, kein Fehler |
+
 ### 3.8 Goal-Tracking (test_goal.py)
 
 | ID | Test | Beschreibung |
@@ -160,6 +168,7 @@ Dieser Katalog listet alle Tests für die StreakHub Integration auf. Er dient al
 | 9.4 | `test_storage_entry_removal` | Tracker-Daten werden aus Storage entfernt |
 | 9.5 | `test_storage_version` | Version = 1 korrekt gesetzt |
 | 9.6 | `test_migration_adds_goal_field` | Alte Daten bekommen goal=0 |
+| 9.7 | `test_storage_remove_tracker_without_data` | Entfernen aus leerem Storage ändert nichts |
 
 ### 3.10 Edge Cases (test_edge_cases.py)
 
@@ -189,7 +198,52 @@ Dieser Katalog listet alle Tests für die StreakHub Integration auf. Er dient al
 | 12.1 | `test_robust_missing_streak_start` | `streak_start` fehlt → graceful handling |
 | 12.2 | `test_robust_invalid_date_format` | `streak_start: "invalid"` → Fehlerbehandlung |
 | 12.3 | `test_robust_missing_history` | `history` fehlt → leere Liste annehmen |
-| 12.4 | `test_robust_coordinator_no_data` | `coordinator.data is None` → Entities zeigen None |
+| 12.4 | `test_robust_coordinator_no_data` | `coordinator.data is None` → Sensor `unknown`, Binary Sensor `off`, Ziel 0 |
+| 12.5 | `test_robust_refresh_without_tracker_data` | Leerer Storage / fehlender Tracker → Update schlägt fehl, Entities `unavailable` (2 Fälle) |
+| 12.6 | `test_robust_actions_without_loaded_data` | Ohne geladene Daten ändern Event, Startdatum, Ziel und Undo nichts |
+
+### 3.13 Logik, Unit-Tests ohne Home Assistant (test_logic.py)
+
+| ID | Test | Beschreibung |
+|----|------|--------------|
+| 13.1 | `test_streak_on_start_day` | Am Starttag ist der Streak 1 |
+| 13.2 | `test_streak_after_multiple_days` | Tage werden korrekt gezählt |
+| 13.3 | `test_streak_on_event_day` | Am Event-Tag (vor `streak_start`) ist der Streak 0 |
+| 13.4 | `test_streak_long_period` | Lange Zeiträume korrekt |
+| 13.5 | `test_streak_same_day_as_start` | `streak_start` = heute |
+| 13.6 | `test_single_current_streak` | Top 3 nur mit aktuellem Streak |
+| 13.7 | `test_current_streak_is_record` | Aktueller Streak länger als alle History-Einträge |
+| 13.8 | `test_current_streak_not_in_top_3` | Aktueller Streak zu kurz für Top 3 |
+| 13.9 | `test_tie_breaking_newer_wins` | Bei Gleichstand gewinnt der neuere Streak |
+| 13.10 | `test_fewer_than_3_streaks` | Top 3 mit weniger als 3 Streaks |
+| 13.11 | `test_zero_day_current_streak` | Aktueller Streak 0 (Event-Tag) |
+| 13.12 | `test_rank_1` | Rang 1 |
+| 13.13 | `test_rank_2` | Rang 2 |
+| 13.14 | `test_rank_3` | Rang 3 |
+| 13.15 | `test_not_in_top_3` | Nicht in Top 3 → Rang 0 |
+| 13.16 | `test_normal_button_press` | Event beendet Streak und startet neuen |
+| 13.17 | `test_button_press_on_same_day_as_start` | Event am Starttag ergibt 0-Tage-Streak |
+| 13.18 | `test_consecutive_button_presses` | Events an zwei aufeinanderfolgenden Tagen |
+| 13.19 | `test_does_not_mutate_input` | Eingabedaten bleiben unverändert |
+| 13.20 | `test_valid_date` | Gültiges Datum → kein Fehler |
+| 13.21 | `test_date_in_future` | Datum in der Zukunft → Fehler-Key |
+| 13.22 | `test_date_tomorrow_is_valid` | Heute + 1 ist gültig (Event war heute) |
+| 13.23 | `test_date_before_streak_start` | Datum vor Streak-Start → Fehler-Key |
+| 13.24 | `test_date_equal_to_streak_start` | Datum = Streak-Start → Fehler-Key |
+| 13.25 | `test_set_streak_start` | Neuer Streak-Start erzeugt korrekten History-Eintrag |
+| 13.26 | `test_create_initial_tracker_data` | Struktur der initialen Tracker-Daten |
+| 13.27 | `test_create_initial_storage_data` | Struktur der initialen Storage-Daten |
+| 13.28 | `test_leap_year_streak` | Streak über Schaltjahr-Grenze |
+| 13.29 | `test_year_boundary_streak` | Streak über Jahreswechsel |
+| 13.30 | `test_very_long_streak` | Sehr langer Streak |
+| 13.31 | `test_top_3_with_many_history_entries` | Top 3 aus vielen History-Einträgen |
+| 13.32 | `test_restores_previous_streak` | Undo stellt den beendeten Streak wieder her |
+| 13.33 | `test_not_possible_without_recent_event` | Undo ohne Event → nicht möglich |
+| 13.34 | `test_not_possible_with_empty_history` | Undo mit leerer History → nicht möglich |
+| 13.35 | `test_days_remaining` | Verbleibende Tage bis zum Ziel |
+| 13.36 | `test_goal_reached` | Ziel erreicht → 0 |
+| 13.37 | `test_goal_exceeded` | Ziel überschritten → negativ |
+| 13.38 | `test_no_goal` | Kein Ziel → kein Wert |
 
 ---
 
@@ -197,19 +251,20 @@ Dieser Katalog listet alle Tests für die StreakHub Integration auf. Er dient al
 
 | Kategorie | Anzahl Tests |
 |-----------|--------------|
-| Setup & Translations | 5 |
+| Setup & Translations | 6 |
 | Entity-Eigenschaften | 12 |
 | ConfigFlow | 11 |
 | Streak-Berechnung | 6 |
 | Ranking-Berechnung | 10 |
 | Reset-Button | 7 |
-| Services (set_streak_start + undo) | 21 |
+| Services (set_streak_start + undo) | 23 |
 | Goal-Tracking | 8 |
-| Storage & Persistenz | 6 |
+| Storage & Persistenz | 7 |
 | Edge Cases | 7 |
 | Mitternacht-Verhalten | 4 |
-| Robustheit | 4 |
-| **Gesamt** | **101 Tests** |
+| Robustheit | 6 |
+| Logik (Unit-Tests) | 38 |
+| **Gesamt** | **145 Tests** (146 Läufe, 12.5 mit 2 Fällen) |
 
 ---
 
@@ -217,5 +272,6 @@ Dieser Katalog listet alle Tests für die StreakHub Integration auf. Er dient al
 
 | Version | Datum | Änderung |
 |---------|-------|----------|
+| 1.2.0 | November 2026 | Tests für 100 % Coverage ergänzt (1.6, 7.22–7.23, 9.7, 12.5–12.6), 12.4 prüft jetzt die Entity-Zustände, Logik-Tests (3.13) aufgenommen |
 | 1.1.0 | Februar 2026 | Coverage-Ziele auf 100% angepasst, Goal-Tracking Tests hinzugefügt |
 | 1.0.0 | Dezember 2025 | Initiale Version |
