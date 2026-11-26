@@ -33,6 +33,7 @@ Dieser Katalog listet alle Tests für die StreakHub Integration auf. Er dient al
 | 1.4 | `test_config_entry_unload` | Integration kann entladen werden |
 | 1.5 | `test_config_entry_remove_cleans_up_entities` | Entities werden beim Entfernen gelöscht |
 | 1.6 | `test_setup_without_initial_date_starts_today` | Ohne Startdatum beginnt der Streak heute |
+| 1.7 | `test_device_reports_integration_version` | Gerät zeigt die Version aus der `manifest.json` |
 
 ### 3.2 Entity-Eigenschaften (test_entities.py)
 
@@ -66,6 +67,8 @@ Dieser Katalog listet alle Tests für die StreakHub Integration auf. Er dient al
 | 3.9 | `test_config_flow_unique_id_generation` | `slugify(name)` korrekt |
 | 3.10 | `test_config_flow_with_goal` | Goal-Eingabe funktioniert |
 | 3.11 | `test_config_flow_goal_default_zero` | Default = 0 |
+| 3.12 | `test_config_flow_default_date_uses_local_day` | Vorgabe "heute" folgt der HA-Zeitzone, nicht der Systemuhr |
+| 3.13 | `test_config_flow_tomorrow_uses_local_day` | Grenze "morgen" folgt der HA-Zeitzone |
 
 ### 3.4 Streak-Berechnung (test_streak_calculation.py)
 
@@ -251,9 +254,9 @@ Dieser Katalog listet alle Tests für die StreakHub Integration auf. Er dient al
 
 | Kategorie | Anzahl Tests |
 |-----------|--------------|
-| Setup & Translations | 6 |
+| Setup & Translations | 7 |
 | Entity-Eigenschaften | 12 |
-| ConfigFlow | 11 |
+| ConfigFlow | 13 |
 | Streak-Berechnung | 6 |
 | Ranking-Berechnung | 10 |
 | Reset-Button | 7 |
@@ -264,7 +267,7 @@ Dieser Katalog listet alle Tests für die StreakHub Integration auf. Er dient al
 | Mitternacht-Verhalten | 4 |
 | Robustheit | 6 |
 | Logik (Unit-Tests) | 38 |
-| **Gesamt** | **145 Tests** (146 Läufe, 12.5 mit 2 Fällen) |
+| **Gesamt** | **148 Tests** (149 Läufe, 12.5 mit 2 Fällen) |
 
 ---
 
@@ -272,6 +275,6 @@ Dieser Katalog listet alle Tests für die StreakHub Integration auf. Er dient al
 
 | Version | Datum | Änderung |
 |---------|-------|----------|
-| 1.2.0 | November 2026 | Tests für 100 % Coverage ergänzt (1.6, 7.22–7.23, 9.7, 12.5–12.6), 12.4 prüft jetzt die Entity-Zustände, Logik-Tests (3.13) aufgenommen |
+| 1.2.0 | November 2026 | Tests für 100 % Coverage ergänzt (1.6, 7.22–7.23, 9.7, 12.5–12.6), Regressionstests für Geräteversion (1.7) und Zeitzone im Config Flow (3.12–3.13), 12.4 prüft jetzt die Entity-Zustände, Logik-Tests (3.13) aufgenommen |
 | 1.1.0 | Februar 2026 | Coverage-Ziele auf 100% angepasst, Goal-Tracking Tests hinzugefügt |
 | 1.0.0 | Dezember 2025 | Initiale Version |
