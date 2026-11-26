@@ -68,7 +68,7 @@ async def test_midnight_dst_spring(hass: HomeAssistant, basic_config_entry) -> N
     period, even though the actual DST handling would only matter for local
     timezone display in production.
     """
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
 
     # Create entry starting March 25
     entry = MockConfigEntry(
@@ -109,7 +109,7 @@ async def test_midnight_dst_fall(hass: HomeAssistant, basic_config_entry) -> Non
     period, even though the actual DST handling would only matter for local
     timezone display in production.
     """
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
 
     # Create entry starting October 20
     entry = MockConfigEntry(

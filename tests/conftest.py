@@ -9,28 +9,25 @@ from typing import Any
 
 import pytest
 
-# Add tests directory to Python path
-tests_dir = Path(__file__).parent
-if str(tests_dir) not in sys.path:
-    sys.path.insert(0, str(tests_dir))
+# Add project root to Python path
+project_root = str(Path(__file__).parent.parent)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
-# Use pytest-homeassistant-custom-component plugin
-pytest_plugins = "pytest_homeassistant_custom_component"
-
-# Extend custom_components.__path__ to include our test custom_components directory
-# This is required because pytest-homeassistant-custom-component provides its own
-# custom_components module, so we need to add our directory to its search path
-import custom_components
-
-custom_components_dir = tests_dir / "custom_components"
-if str(custom_components_dir) not in custom_components.__path__:
-    custom_components.__path__.insert(0, str(custom_components_dir))
+# The pytest-homeassistant plugin loads itself, so it is not listed here.
 
 
 @pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
-    """Enable loading of custom integrations in Home Assistant."""
-    return None
+    """Load the integration from this project's custom_components.
+
+    The plugin ships its own ``custom_components`` package (testing_config),
+    which gets cached as the top-level ``custom_components`` module. Drop that
+    cache so Home Assistant re-resolves it as a namespace package that also
+    includes this project's ``custom_components`` directory.
+    """
+    sys.modules.pop("custom_components", None)
+    return enable_custom_integrations
 
 
 @pytest.fixture(autouse=True)
@@ -63,7 +60,7 @@ def basic_config_entry_data() -> dict[str, Any]:
 @pytest.fixture
 def basic_config_entry(basic_config_entry_data: dict[str, Any]) -> Any:
     """Create a basic config entry for testing."""
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
 
     return MockConfigEntry(
         domain="streakhub",
@@ -77,7 +74,7 @@ def basic_config_entry(basic_config_entry_data: dict[str, Any]) -> Any:
 @pytest.fixture
 def config_entry_without_date() -> Any:
     """Create a config entry without initial_date (should default to today)."""
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
 
     return MockConfigEntry(
         domain="streakhub",
@@ -93,7 +90,7 @@ def config_entry_without_date() -> Any:
 @pytest.fixture
 def config_entry_with_history() -> Any:
     """Create a config entry with pre-existing history data in storage."""
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
 
     return MockConfigEntry(
         domain="streakhub",
@@ -115,7 +112,7 @@ def config_entry_with_history() -> Any:
 @pytest.fixture
 def config_entry_leap_year() -> Any:
     """Config entry starting on Feb 29 (leap year)."""
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
 
     return MockConfigEntry(
         domain="streakhub",
@@ -132,7 +129,7 @@ def config_entry_leap_year() -> Any:
 @pytest.fixture
 def config_entry_year_boundary() -> Any:
     """Config entry crossing year boundary."""
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
 
     return MockConfigEntry(
         domain="streakhub",
@@ -149,7 +146,7 @@ def config_entry_year_boundary() -> Any:
 @pytest.fixture
 def config_entry_long_streak() -> Any:
     """Config entry for testing very long streaks."""
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
 
     return MockConfigEntry(
         domain="streakhub",

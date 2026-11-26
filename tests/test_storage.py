@@ -67,7 +67,7 @@ async def test_storage_persists_after_reload(
 @pytest.mark.asyncio
 async def test_storage_multiple_trackers(hass: HomeAssistant) -> None:
     """Test that multiple trackers are stored independently."""
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
 
     entry1 = MockConfigEntry(
         domain="streakhub",
@@ -167,7 +167,7 @@ async def test_migration_adds_goal_field(
     hass: HomeAssistant, hass_storage: dict
 ) -> None:
     """Test that old tracker data without goal field gets goal=0 added."""
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
 
     # Simulate old storage data without goal field
     hass_storage["streakhub"] = {

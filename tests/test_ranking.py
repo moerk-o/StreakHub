@@ -6,7 +6,7 @@ import pytest
 from freezegun import freeze_time
 from homeassistant.core import HomeAssistant
 
-from conftest import STORAGE_KEY, build_hass_storage_entry
+from tests.conftest import STORAGE_KEY, build_hass_storage_entry
 
 
 @pytest.mark.asyncio

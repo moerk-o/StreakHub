@@ -68,7 +68,7 @@ async def test_edge_very_long_streak(
 @pytest.mark.asyncio
 async def test_edge_very_long_streak_3_years(hass: HomeAssistant) -> None:
     """Test long streak (3 years / 1096 days) - additional verification."""
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
 
     # 2022-01-01 to 2025-01-01 = 3 years
     # 2022: 365 days

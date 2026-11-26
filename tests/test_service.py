@@ -7,7 +7,7 @@ from freezegun import freeze_time
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 
-from conftest import STORAGE_KEY, build_hass_storage_entry
+from tests.conftest import STORAGE_KEY, build_hass_storage_entry
 
 
 @pytest.mark.asyncio

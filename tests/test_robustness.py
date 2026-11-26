@@ -10,7 +10,7 @@ async def test_robust_missing_streak_start(hass: HomeAssistant) -> None:
     """Test graceful handling when streak_start is missing from storage."""
     # This would require mocking storage with invalid data
     # For now, test that normal setup works correctly
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
 
     entry = MockConfigEntry(
         domain="streakhub",
@@ -34,7 +34,7 @@ async def test_robust_missing_streak_start(hass: HomeAssistant) -> None:
 @pytest.mark.asyncio
 async def test_robust_invalid_date_format(hass: HomeAssistant) -> None:
     """Test handling of invalid date format in config."""
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
 
     # Config entry with invalid date format
     entry = MockConfigEntry(
