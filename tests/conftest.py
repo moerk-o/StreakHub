@@ -282,7 +282,9 @@ def build_storage_data(
             tracker_id: {
                 "streak_start": current_streak_start.isoformat(),
                 "history": history,
-                "last_event_date": last_event_date.isoformat() if last_event_date else None,
+                "last_event_date": (
+                    last_event_date.isoformat() if last_event_date else None
+                ),
                 "goal": goal,
             }
         }

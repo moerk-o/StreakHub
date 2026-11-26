@@ -36,7 +36,9 @@ async def test_streak_day_5(hass: HomeAssistant, basic_config_entry) -> None:
 
 
 @pytest.mark.asyncio
-async def test_streak_event_day_is_zero(hass: HomeAssistant, basic_config_entry) -> None:
+async def test_streak_event_day_is_zero(
+    hass: HomeAssistant, basic_config_entry
+) -> None:
     """Test that on the event day (after reset), streak is 0."""
     basic_config_entry.add_to_hass(hass)
 
@@ -68,7 +70,9 @@ async def test_streak_across_year_boundary(
 
     # initial_date = "2024-12-30", test on "2025-01-02"
     with freeze_time("2025-01-02 12:00:00+00:00"):
-        assert await hass.config_entries.async_setup(config_entry_year_boundary.entry_id)
+        assert await hass.config_entries.async_setup(
+            config_entry_year_boundary.entry_id
+        )
         await hass.async_block_till_done()
 
     streak_sensor = hass.states.get("sensor.jahreswechsel_streak")

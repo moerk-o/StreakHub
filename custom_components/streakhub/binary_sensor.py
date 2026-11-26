@@ -64,7 +64,9 @@ async def async_setup_entry(
     )
 
 
-class StreakHubBinarySensor(CoordinatorEntity[StreakHubCoordinator], BinarySensorEntity):
+class StreakHubBinarySensor(
+    CoordinatorEntity[StreakHubCoordinator], BinarySensorEntity
+):
     """Representation of a StreakHub binary sensor."""
 
     entity_description: StreakHubBinarySensorEntityDescription
