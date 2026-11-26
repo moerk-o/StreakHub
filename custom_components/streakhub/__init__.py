@@ -13,10 +13,10 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
-from homeassistant.util import slugify
 from homeassistant.util import dt as dt_util
+from homeassistant.util import slugify
 
-from .const import CONF_GOAL, CONF_INITIAL_DATE, CONF_NAME, DOMAIN, PLATFORMS
+from .const import CONF_GOAL, CONF_INITIAL_DATE, CONF_NAME, DOMAIN
 from .coordinator import (
     StreakHubCoordinator,
     async_get_or_create_store,

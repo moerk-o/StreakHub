@@ -1,4 +1,4 @@
-"""Test goal-tracking features (Number entity, Days-to-Goal sensor, Has-Goal binary sensor)."""
+"""Test goal tracking: goal number, days-to-goal sensor, has-goal binary sensor."""
 
 from datetime import date
 
@@ -6,7 +6,7 @@ import pytest
 from freezegun import freeze_time
 from homeassistant.core import HomeAssistant
 
-from conftest import STORAGE_KEY, build_hass_storage_entry
+from tests.conftest import STORAGE_KEY, build_hass_storage_entry
 
 
 @pytest.mark.asyncio
@@ -55,7 +55,7 @@ async def test_goal_number_set_value(
 @pytest.mark.asyncio
 async def test_days_to_goal_positive(hass: HomeAssistant, hass_storage: dict) -> None:
     """Test that days_to_goal shows positive values correctly."""
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
 
     # Goal of 100 days, streak started on 2025-01-01, test on 2025-01-15
     # Streak = 15 days, days_to_goal = 100 - 15 = 85
@@ -90,7 +90,7 @@ async def test_days_to_goal_positive(hass: HomeAssistant, hass_storage: dict) ->
 @pytest.mark.asyncio
 async def test_days_to_goal_zero(hass: HomeAssistant, hass_storage: dict) -> None:
     """Test that days_to_goal is 0 when goal is reached."""
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
 
     # Goal of 100 days, streak started on 2025-01-01, test on 2025-04-10
     # Streak = 100 days (01-01 to 04-10), days_to_goal = 100 - 100 = 0
@@ -125,7 +125,7 @@ async def test_days_to_goal_zero(hass: HomeAssistant, hass_storage: dict) -> Non
 @pytest.mark.asyncio
 async def test_days_to_goal_negative(hass: HomeAssistant, hass_storage: dict) -> None:
     """Test that days_to_goal shows negative values when goal is exceeded."""
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
 
     # Goal of 100 days, streak started on 2025-01-01, test on 2025-04-20
     # Streak = 110 days (01-01 to 04-20), days_to_goal = 100 - 110 = -10
@@ -162,7 +162,7 @@ async def test_days_to_goal_icon_changes(
     hass: HomeAssistant, hass_storage: dict
 ) -> None:
     """Test that days_to_goal icon changes when goal is reached."""
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
 
     hass_storage[STORAGE_KEY] = build_hass_storage_entry(
         tracker_id="test_goal",
@@ -190,7 +190,9 @@ async def test_days_to_goal_icon_changes(
 
         days_to_goal_sensor = hass.states.get("sensor.test_goal_days_to_goal")
         assert days_to_goal_sensor is not None
-        assert days_to_goal_sensor.attributes.get("icon") == "mdi:check-decagram-outline"
+        assert (
+            days_to_goal_sensor.attributes.get("icon") == "mdi:check-decagram-outline"
+        )
 
     # Reload at goal reached: icon should be solid
     await hass.config_entries.async_unload(config_entry.entry_id)
@@ -226,7 +228,7 @@ async def test_has_goal_binary_sensor_on(
     hass: HomeAssistant, hass_storage: dict
 ) -> None:
     """Test that has_goal binary sensor is on when goal > 0."""
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
 
     hass_storage[STORAGE_KEY] = build_hass_storage_entry(
         tracker_id="test_goal",

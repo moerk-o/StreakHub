@@ -32,7 +32,9 @@ async def test_edge_year_boundary(
 
     # Start on Dec 30, 2024
     with freeze_time("2025-01-03 12:00:00+00:00"):
-        assert await hass.config_entries.async_setup(config_entry_year_boundary.entry_id)
+        assert await hass.config_entries.async_setup(
+            config_entry_year_boundary.entry_id
+        )
         await hass.async_block_till_done()
 
     streak_sensor = hass.states.get("sensor.jahreswechsel_streak")
@@ -68,7 +70,7 @@ async def test_edge_very_long_streak(
 @pytest.mark.asyncio
 async def test_edge_very_long_streak_3_years(hass: HomeAssistant) -> None:
     """Test long streak (3 years / 1096 days) - additional verification."""
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
 
     # 2022-01-01 to 2025-01-01 = 3 years
     # 2022: 365 days
