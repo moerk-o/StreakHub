@@ -8,15 +8,19 @@ from homeassistant.components.button import (
     ButtonEntity,
     ButtonEntityDescription,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import (
+    AddConfigEntryEntitiesCallback,  # Needs Home Assistant 2025.3 (see hacs.json)
+)
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, ENTITY_RESET, ICON_RESET
-from .coordinator import StreakHubCoordinator
+from .coordinator import StreakHubConfigEntry, StreakHubCoordinator
+
+# Entities only read from or write to the coordinator, no device I/O
+PARALLEL_UPDATES = 0
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -35,8 +39,8 @@ BUTTON_DESCRIPTIONS: tuple[StreakHubButtonEntityDescription, ...] = (
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    entry: StreakHubConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up StreakHub button entities.
 
@@ -45,7 +49,7 @@ async def async_setup_entry(
         entry: Config entry.
         async_add_entities: Callback to add entities.
     """
-    coordinator: StreakHubCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator = entry.runtime_data
 
     async_add_entities(
         StreakHubButton(coordinator, description, entry)
@@ -67,7 +71,7 @@ class StreakHubButton(CoordinatorEntity[StreakHubCoordinator], ButtonEntity):
         self,
         coordinator: StreakHubCoordinator,
         description: StreakHubButtonEntityDescription,
-        entry: ConfigEntry,
+        entry: StreakHubConfigEntry,
     ) -> None:
         """Initialize the button.
 
@@ -90,7 +94,7 @@ class StreakHubButton(CoordinatorEntity[StreakHubCoordinator], ButtonEntity):
             identifiers={(DOMAIN, self._entry.entry_id)},
             name=self._entry.title,
             manufacturer="StreakHub",
-            sw_version="1.0.0",
+            sw_version=self.coordinator.sw_version,
         )
 
     async def async_press(self) -> None:

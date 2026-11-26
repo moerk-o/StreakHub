@@ -7,7 +7,7 @@ from freezegun import freeze_time
 from homeassistant.components.sensor import SensorStateClass
 from homeassistant.core import HomeAssistant
 
-from conftest import STORAGE_KEY, build_hass_storage_entry
+from tests.conftest import STORAGE_KEY, build_hass_storage_entry
 
 
 @pytest.mark.asyncio
@@ -207,7 +207,7 @@ async def test_days_to_goal_consistency(
     Verifies that the calculated goal_date matches the days_to_goal value,
     ensuring that (goal_date - today).days == days_to_goal when goal is set.
     """
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    from pytest_homeassistant.common import MockConfigEntry
 
     # Test scenario: Goal of 100 days, streak started 10 days ago
     hass_storage[STORAGE_KEY] = build_hass_storage_entry(

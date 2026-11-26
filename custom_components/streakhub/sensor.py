@@ -12,10 +12,11 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import (
+    AddConfigEntryEntitiesCallback,  # Needs Home Assistant 2025.3 (see hacs.json)
+)
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
@@ -29,10 +30,9 @@ from .const import (
     ICON_MEDAL,
     ICON_STREAK,
     ICON_TROPHY,
-    ICON_TROPHY_OUTLINE,
     UNIT_DAYS,
 )
-from .coordinator import StreakHubCoordinator
+from .coordinator import StreakHubConfigEntry, StreakHubCoordinator
 from .logic import (
     Top3Entry,
     calculate_days_to_goal,
@@ -41,13 +41,16 @@ from .logic import (
     calculate_top_3,
 )
 
+# Entities only read from or write to the coordinator, no device I/O
+PARALLEL_UPDATES = 0
+
 
 @dataclass(frozen=True, kw_only=True)
 class StreakHubSensorEntityDescription(SensorEntityDescription):
     """Describes a StreakHub sensor entity."""
 
     value_fn: Callable[[StreakHubCoordinator, date], Any]
-    extra_state_attributes_fn: Callable[[StreakHubCoordinator, date], dict[str, Any]] | None = None
+    extra_state_attributes_fn: Callable[[StreakHubCoordinator, date], dict[str, Any]]
     icon_fn: Callable[[StreakHubCoordinator, date], str] | None = None
 
 
@@ -62,7 +65,9 @@ def _get_streak_value(coordinator: StreakHubCoordinator, today: date) -> int:
     return calculate_streak(streak_start, today)
 
 
-def _get_streak_attributes(coordinator: StreakHubCoordinator, today: date) -> dict[str, Any]:
+def _get_streak_attributes(
+    coordinator: StreakHubCoordinator, today: date
+) -> dict[str, Any]:
     """Get streak sensor attributes."""
     return {
         "streak_start": coordinator.data["streak_start"],
@@ -82,7 +87,9 @@ def _get_rank_value(coordinator: StreakHubCoordinator, today: date) -> int:
     return calculate_rank(top_3)
 
 
-def _get_rank_attributes(coordinator: StreakHubCoordinator, today: date) -> dict[str, Any]:
+def _get_rank_attributes(
+    coordinator: StreakHubCoordinator, today: date
+) -> dict[str, Any]:
     """Get rank sensor attributes."""
     return {
         "top_3": _get_top_3(coordinator, today),
@@ -97,7 +104,9 @@ def _get_rank_icon(coordinator: StreakHubCoordinator, today: date) -> str:
     return ICON_MEDAL
 
 
-def _get_days_to_goal_value(coordinator: StreakHubCoordinator, today: date) -> int | None:
+def _get_days_to_goal_value(
+    coordinator: StreakHubCoordinator, today: date
+) -> int | None:
     """Calculate days remaining to goal."""
     goal = coordinator.data.get("goal", 0)
     if goal == 0:
@@ -162,8 +171,8 @@ SENSOR_DESCRIPTIONS: tuple[StreakHubSensorEntityDescription, ...] = (
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    entry: StreakHubConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up StreakHub sensor entities.
 
@@ -172,7 +181,7 @@ async def async_setup_entry(
         entry: Config entry.
         async_add_entities: Callback to add entities.
     """
-    coordinator: StreakHubCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator = entry.runtime_data
 
     async_add_entities(
         StreakHubSensor(coordinator, description, entry)
@@ -190,7 +199,7 @@ class StreakHubSensor(CoordinatorEntity[StreakHubCoordinator], SensorEntity):
         self,
         coordinator: StreakHubCoordinator,
         description: StreakHubSensorEntityDescription,
-        entry: ConfigEntry,
+        entry: StreakHubConfigEntry,
     ) -> None:
         """Initialize the sensor.
 
@@ -213,7 +222,7 @@ class StreakHubSensor(CoordinatorEntity[StreakHubCoordinator], SensorEntity):
             identifiers={(DOMAIN, self._entry.entry_id)},
             name=self._entry.title,
             manufacturer="StreakHub",
-            sw_version="1.0.0",
+            sw_version=self.coordinator.sw_version,
         )
 
     def _get_today(self) -> date:
@@ -231,8 +240,6 @@ class StreakHubSensor(CoordinatorEntity[StreakHubCoordinator], SensorEntity):
     def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return additional state attributes."""
         if self.coordinator.data is None:
-            return None
-        if self.entity_description.extra_state_attributes_fn is None:
             return None
         return self.entity_description.extra_state_attributes_fn(
             self.coordinator, self._get_today()

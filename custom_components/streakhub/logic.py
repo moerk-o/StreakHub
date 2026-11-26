@@ -239,8 +239,12 @@ def validate_set_streak_start(
         - "date_before_streak_start": new_start <= current_start
 
     Examples:
-        >>> validate_set_streak_start(date(2025, 1, 10), date(2025, 1, 15), date(2025, 1, 20))
-        >>> validate_set_streak_start(date(2025, 1, 10), date(2025, 1, 25), date(2025, 1, 20))
+        >>> validate_set_streak_start(
+        ...     date(2025, 1, 10), date(2025, 1, 15), date(2025, 1, 20)
+        ... )
+        >>> validate_set_streak_start(
+        ...     date(2025, 1, 10), date(2025, 1, 25), date(2025, 1, 20)
+        ... )
         'date_in_future'
     """
     # Check: new_start must not be in the future

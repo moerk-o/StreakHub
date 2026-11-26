@@ -4,10 +4,13 @@ from datetime import date
 
 import pytest
 from freezegun import freeze_time
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
+from homeassistant.helpers import entity_registry as er
 
-from conftest import STORAGE_KEY, build_hass_storage_entry
+from custom_components.streakhub.coordinator import DATA_STORE
+from tests.conftest import STORAGE_KEY, build_hass_storage_entry
 
 
 @pytest.mark.asyncio
@@ -62,7 +65,7 @@ async def test_service_history_correct(
         await hass.async_block_till_done()
 
         # Check history
-        coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
+        coordinator = basic_config_entry.runtime_data
         history = coordinator.data.get("history", [])
         assert len(history) == 1
         # Per konzept.md: set_streak_start(2025-01-08) means event was Jan 7
@@ -354,6 +357,74 @@ async def test_service_on_foreign_entity(
 
 
 @pytest.mark.asyncio
+async def test_service_on_entity_of_other_integration(
+    hass: HomeAssistant, basic_config_entry
+) -> None:
+    """Test that the services skip entities of other integrations."""
+    basic_config_entry.add_to_hass(hass)
+    er.async_get(hass).async_get_or_create(
+        "sensor",
+        "other_integration",
+        "other_unique_id",
+        suggested_object_id="other_sensor",
+    )
+
+    with freeze_time("2025-01-10 12:00:00+00:00"):
+        assert await hass.config_entries.async_setup(basic_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        await hass.services.async_call(
+            "streakhub",
+            "set_streak_start",
+            {
+                "entity_id": "sensor.other_sensor",
+                "date": "2025-01-08",
+            },
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+
+        # The tracker is unchanged
+        streak_sensor = hass.states.get("sensor.zucker_streak")
+        assert int(streak_sensor.state) == 10
+
+
+@pytest.mark.asyncio
+async def test_service_on_unloaded_tracker(
+    hass: HomeAssistant, basic_config_entry
+) -> None:
+    """Test that the services skip entities whose tracker is not loaded."""
+    basic_config_entry.add_to_hass(hass)
+
+    with freeze_time("2025-01-10 12:00:00+00:00"):
+        assert await hass.config_entries.async_setup(basic_config_entry.entry_id)
+        await hass.async_block_till_done()
+        assert await hass.config_entries.async_unload(basic_config_entry.entry_id)
+        await hass.async_block_till_done()
+        assert basic_config_entry.state is ConfigEntryState.NOT_LOADED
+
+        # The services stay registered and neither change nor reject anything
+        await hass.services.async_call(
+            "streakhub",
+            "set_streak_start",
+            {
+                "entity_id": "sensor.zucker_streak",
+                "date": "2025-01-08",
+            },
+            blocking=True,
+        )
+        await hass.services.async_call(
+            "streakhub",
+            "undo_last_event",
+            {"entity_id": "sensor.zucker_streak"},
+            blocking=True,
+        )
+
+    storage_data = await hass.data[DATA_STORE].async_load()
+    assert storage_data["trackers"]["zucker"]["streak_start"] == "2025-01-01"
+
+
+@pytest.mark.asyncio
 async def test_service_zero_day_old_streak(
     hass: HomeAssistant, basic_config_entry
 ) -> None:
@@ -365,7 +436,8 @@ async def test_service_zero_day_old_streak(
         await hass.async_block_till_done()
 
         # On start day (Jan 1), streak is 1 day
-        # If we set new start to Jan 2, old streak is Jan 1 only = 1 day (should be saved)
+        # If we set new start to Jan 2, old streak is Jan 1 only = 1 day
+        # (should be saved)
         await hass.services.async_call(
             "streakhub",
             "set_streak_start",
@@ -381,7 +453,7 @@ async def test_service_zero_day_old_streak(
         # event_day = new_start - 1 = Jan 1
         # old_streak_end = event_day - 1 = Dec 31
         # old_streak_days = (Dec 31 - Jan 1).days + 1 = 0 Tage → nicht gespeichert
-        coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
+        coordinator = basic_config_entry.runtime_data
         history = coordinator.data.get("history", [])
         assert len(history) == 0
 
@@ -436,7 +508,7 @@ async def test_undo_after_button_press(
         assert streak_sensor.attributes.get("streak_start") == "2025-01-01"
 
         # History should be empty again
-        coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
+        coordinator = basic_config_entry.runtime_data
         assert len(coordinator.data.get("history", [])) == 0
 
 
@@ -570,7 +642,7 @@ async def test_undo_with_existing_history(
         await hass.async_block_till_done()
 
         # Verify initial state
-        coordinator = hass.data["streakhub"][config_entry_with_history.entry_id]
+        coordinator = config_entry_with_history.runtime_data
         assert len(coordinator.data.get("history", [])) == 2
 
         # Undo the last event
@@ -587,7 +659,7 @@ async def test_undo_with_existing_history(
         assert streak_sensor.attributes.get("streak_start") == "2025-01-01"
 
         # History should have only 1 entry now (the old one)
-        coordinator = hass.data["streakhub"][config_entry_with_history.entry_id]
+        coordinator = config_entry_with_history.runtime_data
         history = coordinator.data.get("history", [])
         assert len(history) == 1
         assert history[0]["start"] == "2024-11-01"

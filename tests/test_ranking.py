@@ -6,7 +6,7 @@ import pytest
 from freezegun import freeze_time
 from homeassistant.core import HomeAssistant
 
-from conftest import STORAGE_KEY, build_hass_storage_entry
+from tests.conftest import STORAGE_KEY, build_hass_storage_entry
 
 
 @pytest.mark.asyncio
@@ -44,10 +44,11 @@ async def test_rank_current_is_record(
         )
         await hass.async_block_till_done()
 
-    # Now we have history with 9 days (Jan 1-9, per konzept.md), new streak starts Jan 11
+    # Now we have history with 9 days (Jan 1-9, per konzept.md),
+    # new streak starts Jan 11
     with freeze_time("2025-01-20 12:00:00+00:00"):
         # Force a refresh - new streak is 10 days (Jan 11 to Jan 20)
-        coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
+        coordinator = basic_config_entry.runtime_data
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 

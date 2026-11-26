@@ -2,6 +2,8 @@
 
 from typing import Final
 
+from homeassistant.const import Platform
+
 DOMAIN: Final = "streakhub"
 
 # Storage
@@ -22,7 +24,12 @@ ENTITY_HAS_GOAL: Final = "has_goal"
 ENTITY_GOAL: Final = "goal"
 
 # Platforms
-PLATFORMS: Final = ["sensor", "button", "binary_sensor", "number"]
+PLATFORMS: Final = [
+    Platform.SENSOR,
+    Platform.BUTTON,
+    Platform.BINARY_SENSOR,
+    Platform.NUMBER,
+]
 
 # Icons
 ICON_STREAK: Final = "mdi:counter"

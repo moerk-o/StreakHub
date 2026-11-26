@@ -124,7 +124,7 @@ async def test_button_press_zero_day_streak_not_saved(
         await hass.async_block_till_done()
 
         # Check coordinator data for history length
-        coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
+        coordinator = basic_config_entry.runtime_data
         history = coordinator.data.get("history", [])
         # Should only have 1 entry (the 9-day streak per konzept.md), not 2
         # Button press on Jan 10 saves streak Jan 1-9 = 9 days
@@ -155,7 +155,7 @@ async def test_button_press_on_streak_start_day(
         # Check history - 0-day streak should NOT be saved
         # Per konzept.md: event_day = 1.1., old_streak_end = 31.12.
         # old_streak_days = (31.12. - 1.1.).days + 1 = 0 Tage → nicht gespeichert
-        coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
+        coordinator = basic_config_entry.runtime_data
         history = coordinator.data.get("history", [])
         assert len(history) == 0
 
@@ -210,7 +210,7 @@ async def test_button_press_consecutive_days(
     # Move to next day
     with freeze_time("2025-01-11 12:00:00+00:00"):
         # Force coordinator refresh
-        coordinator = hass.data["streakhub"][basic_config_entry.entry_id]
+        coordinator = basic_config_entry.runtime_data
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
@@ -227,6 +227,7 @@ async def test_button_press_consecutive_days(
         # Per konzept.md:
         # - First press on Jan 10: old_streak = Jan 1-9 = 9 days (saved)
         # - Second press on Jan 11: streak_start = Jan 11, event_day = Jan 11
-        #   old_streak_end = Jan 10, old_streak_days = (10.1. - 11.1.).days + 1 = 0 (not saved)
+        #   old_streak_end = Jan 10,
+        #   old_streak_days = (10.1. - 11.1.).days + 1 = 0 (not saved)
         assert len(history) == 1
         assert history[0]["days"] == 9

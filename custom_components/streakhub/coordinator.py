@@ -6,8 +6,10 @@ import logging
 from datetime import date, timedelta
 from typing import TYPE_CHECKING
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.util.hass_dict import HassKey
 
 from .const import DOMAIN, STORAGE_KEY, STORAGE_VERSION
 from .logic import (
@@ -21,10 +23,14 @@ from .logic import (
 )
 
 if TYPE_CHECKING:
-    from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
+
+# Shared storage instance for all trackers
+DATA_STORE: HassKey[Store[StorageData]] = HassKey(f"{DOMAIN}_store")
+
+type StreakHubConfigEntry = ConfigEntry[StreakHubCoordinator]
 
 
 class StreakHubCoordinator(DataUpdateCoordinator[TrackerData]):
@@ -34,14 +40,15 @@ class StreakHubCoordinator(DataUpdateCoordinator[TrackerData]):
     Multiple coordinators share the same Store instance.
     """
 
-    config_entry: ConfigEntry
+    config_entry: StreakHubConfigEntry
 
     def __init__(
         self,
         hass: HomeAssistant,
         store: Store[StorageData],
         tracker_id: str,
-        entry: ConfigEntry,
+        entry: StreakHubConfigEntry,
+        sw_version: str,
     ) -> None:
         """Initialize the coordinator.
 
@@ -50,17 +57,19 @@ class StreakHubCoordinator(DataUpdateCoordinator[TrackerData]):
             store: Shared storage instance for all trackers.
             tracker_id: Unique identifier for this tracker (slugified name).
             entry: Config entry for this tracker.
+            sw_version: Integration version, shown on the tracker device.
         """
         super().__init__(
             hass,
             _LOGGER,
+            config_entry=entry,
             name=f"{DOMAIN}_{tracker_id}",
             update_interval=timedelta(hours=1),
         )
         self._store = store
         self._tracker_id = tracker_id
         self._storage_data: StorageData | None = None
-        self.config_entry = entry
+        self.sw_version = sw_version
 
     @property
     def tracker_id(self) -> str:
@@ -244,7 +253,7 @@ class StreakHubCoordinator(DataUpdateCoordinator[TrackerData]):
 async def async_get_or_create_store(hass: HomeAssistant) -> Store[StorageData]:
     """Get or create the shared storage instance.
 
-    The store is cached in hass.data to be shared across all coordinators.
+    The store is kept in hass.data to be shared across all coordinators.
 
     Args:
         hass: Home Assistant instance.
@@ -252,15 +261,12 @@ async def async_get_or_create_store(hass: HomeAssistant) -> Store[StorageData]:
     Returns:
         The shared Store instance.
     """
-    if DOMAIN not in hass.data:
-        hass.data[DOMAIN] = {}
-
-    if "store" not in hass.data[DOMAIN]:
-        hass.data[DOMAIN]["store"] = Store[StorageData](
+    if DATA_STORE not in hass.data:
+        hass.data[DATA_STORE] = Store[StorageData](
             hass, STORAGE_VERSION, STORAGE_KEY
         )
 
-    return hass.data[DOMAIN]["store"]
+    return hass.data[DATA_STORE]
 
 
 async def async_initialize_tracker(
