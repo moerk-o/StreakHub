@@ -1,7 +1,13 @@
 {
   "domain": "streakhub",
   "name": "StreakHub",
-  "codeowners": [],
+  "categories": [
+    "health_wellbeing",
+    "helpers.calculate_value"
+  ],
+  "codeowners": [
+    "@moerk-o"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/moerk-o/StreakHub",
   "integration_type": "service",
