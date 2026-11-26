@@ -8,6 +8,7 @@ from typing import Any
 import voluptuous as vol
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.helpers import selector
+from homeassistant.util import dt as dt_util
 from homeassistant.util import slugify
 
 from .const import CONF_GOAL, CONF_INITIAL_DATE, CONF_NAME, DOMAIN
@@ -27,6 +28,8 @@ class StreakHubConfigFlow(ConfigFlow, domain=DOMAIN):
         and optional initial start date.
         """
         errors: dict[str, str] = {}
+        # Today in the Home Assistant time zone, not the system clock
+        today = dt_util.now().date()
 
         if user_input is not None:
             # Generate unique ID from name
@@ -42,7 +45,7 @@ class StreakHubConfigFlow(ConfigFlow, domain=DOMAIN):
                 initial_date = date.fromisoformat(initial_date)
 
             # Validate: date must not be in the future (> tomorrow)
-            tomorrow = date.today() + timedelta(days=1)
+            tomorrow = today + timedelta(days=1)
             if initial_date > tomorrow:
                 errors[CONF_INITIAL_DATE] = "date_in_future"
                 return self.async_show_form(
@@ -55,7 +58,7 @@ class StreakHubConfigFlow(ConfigFlow, domain=DOMAIN):
                             vol.Optional(
                                 CONF_INITIAL_DATE,
                                 default=user_input.get(
-                                    CONF_INITIAL_DATE, date.today().isoformat()
+                                    CONF_INITIAL_DATE, today.isoformat()
                                 ),
                             ): selector.DateSelector(),
                             vol.Optional(
@@ -90,7 +93,7 @@ class StreakHubConfigFlow(ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_NAME): str,
                     vol.Optional(
                         CONF_INITIAL_DATE,
-                        default=date.today().isoformat(),
+                        default=today.isoformat(),
                     ): selector.DateSelector(),
                     vol.Optional(CONF_GOAL, default=0): selector.NumberSelector(
                         selector.NumberSelectorConfig(
