@@ -4,9 +4,12 @@ from datetime import date
 
 import pytest
 from freezegun import freeze_time
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
+from homeassistant.helpers import entity_registry as er
 
+from custom_components.streakhub.coordinator import DATA_STORE
 from tests.conftest import STORAGE_KEY, build_hass_storage_entry
 
 
@@ -351,6 +354,74 @@ async def test_service_on_foreign_entity(
             blocking=True,
         )
         # Should complete without error (just logs warning)
+
+
+@pytest.mark.asyncio
+async def test_service_on_entity_of_other_integration(
+    hass: HomeAssistant, basic_config_entry
+) -> None:
+    """Test that the services skip entities of other integrations."""
+    basic_config_entry.add_to_hass(hass)
+    er.async_get(hass).async_get_or_create(
+        "sensor",
+        "other_integration",
+        "other_unique_id",
+        suggested_object_id="other_sensor",
+    )
+
+    with freeze_time("2025-01-10 12:00:00+00:00"):
+        assert await hass.config_entries.async_setup(basic_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        await hass.services.async_call(
+            "streakhub",
+            "set_streak_start",
+            {
+                "entity_id": "sensor.other_sensor",
+                "date": "2025-01-08",
+            },
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+
+        # The tracker is unchanged
+        streak_sensor = hass.states.get("sensor.zucker_streak")
+        assert int(streak_sensor.state) == 10
+
+
+@pytest.mark.asyncio
+async def test_service_on_unloaded_tracker(
+    hass: HomeAssistant, basic_config_entry
+) -> None:
+    """Test that the services skip entities whose tracker is not loaded."""
+    basic_config_entry.add_to_hass(hass)
+
+    with freeze_time("2025-01-10 12:00:00+00:00"):
+        assert await hass.config_entries.async_setup(basic_config_entry.entry_id)
+        await hass.async_block_till_done()
+        assert await hass.config_entries.async_unload(basic_config_entry.entry_id)
+        await hass.async_block_till_done()
+        assert basic_config_entry.state is ConfigEntryState.NOT_LOADED
+
+        # The services stay registered and neither change nor reject anything
+        await hass.services.async_call(
+            "streakhub",
+            "set_streak_start",
+            {
+                "entity_id": "sensor.zucker_streak",
+                "date": "2025-01-08",
+            },
+            blocking=True,
+        )
+        await hass.services.async_call(
+            "streakhub",
+            "undo_last_event",
+            {"entity_id": "sensor.zucker_streak"},
+            blocking=True,
+        )
+
+    storage_data = await hass.data[DATA_STORE].async_load()
+    assert storage_data["trackers"]["zucker"]["streak_start"] == "2025-01-01"
 
 
 @pytest.mark.asyncio

@@ -4,7 +4,11 @@ import pytest
 from freezegun import freeze_time
 from homeassistant.core import HomeAssistant
 
-from custom_components.streakhub.coordinator import DATA_STORE
+from custom_components.streakhub.coordinator import (
+    DATA_STORE,
+    async_get_or_create_store,
+    async_remove_tracker,
+)
 
 
 @pytest.mark.asyncio
@@ -208,3 +212,13 @@ async def test_migration_adds_goal_field(
     days_to_goal_sensor = hass.states.get("sensor.old_tracker_days_to_goal")
     assert days_to_goal_sensor is not None
     assert days_to_goal_sensor.state == "unknown"  # goal=0 → unknown
+
+
+@pytest.mark.asyncio
+async def test_storage_remove_tracker_without_data(hass: HomeAssistant) -> None:
+    """Test that removing a tracker from an empty storage changes nothing."""
+    store = await async_get_or_create_store(hass)
+
+    await async_remove_tracker(store, "zucker")
+
+    assert await store.async_load() is None

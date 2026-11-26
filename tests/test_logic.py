@@ -10,6 +10,7 @@ from custom_components.streakhub.logic import (
     HistoryEntry,
     Top3Entry,
     TrackerData,
+    calculate_days_to_goal,
     calculate_rank,
     calculate_streak,
     calculate_top_3,
@@ -17,6 +18,7 @@ from custom_components.streakhub.logic import (
     create_initial_tracker_data,
     process_event,
     process_set_streak_start,
+    undo_last_event,
     validate_set_streak_start,
 )
 
@@ -399,3 +401,65 @@ class TestEdgeCases:
         assert top_3[0]["days"] == 30
         assert top_3[1]["days"] == 20
         assert top_3[2]["days"] == 10
+
+
+class TestUndoLastEvent:
+    """Tests for undo_last_event function."""
+
+    def test_restores_previous_streak(self) -> None:
+        """Test that undo restores the streak ended by the last event."""
+        data: TrackerData = {
+            "streak_start": "2025-01-21",
+            "history": [{"start": "2025-01-01", "end": "2025-01-19", "days": 19}],
+            "last_event_date": "2025-01-20",
+            "goal": 0,
+        }
+
+        result = undo_last_event(data)
+
+        assert result is not None
+        assert result["streak_start"] == "2025-01-01"
+        assert result["history"] == []
+        assert result["last_event_date"] is None
+
+    def test_not_possible_without_recent_event(self) -> None:
+        """Test that undo is not possible when no event is recorded."""
+        data: TrackerData = {
+            "streak_start": "2025-01-21",
+            "history": [{"start": "2025-01-01", "end": "2025-01-19", "days": 19}],
+            "last_event_date": None,
+            "goal": 0,
+        }
+
+        assert undo_last_event(data) is None
+
+    def test_not_possible_with_empty_history(self) -> None:
+        """Test that undo is not possible when there is no streak to restore."""
+        data: TrackerData = {
+            "streak_start": "2025-01-21",
+            "history": [],
+            "last_event_date": "2025-01-20",
+            "goal": 0,
+        }
+
+        assert undo_last_event(data) is None
+
+
+class TestCalculateDaysToGoal:
+    """Tests for calculate_days_to_goal function."""
+
+    def test_days_remaining(self) -> None:
+        """Test the days left before the goal is reached."""
+        assert calculate_days_to_goal(30, 100) == 70
+
+    def test_goal_reached(self) -> None:
+        """Test that zero days are left on the day the goal is reached."""
+        assert calculate_days_to_goal(100, 100) == 0
+
+    def test_goal_exceeded(self) -> None:
+        """Test that the value turns negative once the goal is exceeded."""
+        assert calculate_days_to_goal(120, 100) == -20
+
+    def test_no_goal(self) -> None:
+        """Test that there is no value without a goal."""
+        assert calculate_days_to_goal(50, 0) is None

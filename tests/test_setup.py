@@ -114,3 +114,22 @@ async def test_config_entry_remove_cleans_up_entities(
 
     # State machine should also not have them anymore
     assert hass.states.get("sensor.zucker_streak") is None
+
+
+@pytest.mark.asyncio
+async def test_setup_without_initial_date_starts_today(
+    hass: HomeAssistant, config_entry_without_date
+) -> None:
+    """Test that a tracker without initial date starts its streak today."""
+    config_entry_without_date.add_to_hass(hass)
+
+    with freeze_time("2025-01-10 12:00:00+00:00"):
+        assert await hass.config_entries.async_setup(
+            config_entry_without_date.entry_id
+        )
+        await hass.async_block_till_done()
+
+        streak_sensor = hass.states.get("sensor.test_tracker_streak")
+        assert streak_sensor is not None
+        assert int(streak_sensor.state) == 1
+        assert streak_sensor.attributes["streak_start"] == "2025-01-10"
