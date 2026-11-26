@@ -81,12 +81,19 @@ dmypy.json
 .DS_Store
 Thumbs.db
 
-# Guide symlinks (point to central versions)
-TESTING_GUIDE.md
+# Claude Code internal and guide symlinks (see CLAUDE_GUIDE.md 3.4 / GIT_WORKFLOW_GUIDE.md 1.9)
+CLAUDE.md
+CLAUDE_GUIDE.md
+DOCUMENTATION_GUIDE.md
+GIT_WORKFLOW_GUIDE.md
 RELEASE_GUIDE.md
+TESTING_GUIDE.md
+GUIDES_FEEDBACK.md
 
 # Work files / notes
+docs/
 konzept.md
+*_Konzept.md
 GOAL_TRACKING_KONZEPT.md
 MIGRATION.md
 FAILED_TESTS.md
